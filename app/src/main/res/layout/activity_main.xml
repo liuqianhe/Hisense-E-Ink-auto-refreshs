@@ -1,435 +1,464 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layout>
 
-    <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    <!-- 根布局改为可滚动：内容超出屏幕时可上下滑动，底部按钮不再遮挡配置区 -->
+    <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:app="http://schemas.android.com/apk/res-auto"
         xmlns:tools="http://schemas.android.com/tools"
+        android:id="@+id/scroll_root"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:fillViewport="true"
         tools:context=".activity.MainActivity">
 
-        <!-- 自定义轻量标题栏（替代原生 ActionBar） -->
-        <LinearLayout
-            android:id="@+id/cl_custom_title"
-            style="@style/CustomTitleBarStyle"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintTop_toTopOf="parent">
-
-            <TextView
-                android:id="@+id/tv_custom_title"
-                style="@style/CustomTitleTextStyle"
-                android:text="@string/title_activity_main" />
-        </LinearLayout>
-
-        <TextView
-            android:id="@+id/tv_service_status_title"
-            style="@style/areaTitleStyle"
-            android:text="@string/tv_service_status"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/cl_custom_title" />
-
         <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/cl_service_status"
-            style="@style/areaStyle"
-            android:background="@drawable/area_border_line"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tv_service_status_title">
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingBottom="16dp">
 
-            <TextView
-                android:id="@+id/tv_accessibility"
-                style="@style/defTextStyle"
-                android:layout_marginTop="20dp"
-                android:text="@string/tv_accessibility_status"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-
-            <TextView
-                android:id="@+id/tv_accessibility_status"
-                style="@style/defTextStyle"
-                app:layout_constraintBottom_toBottomOf="@id/tv_accessibility"
-                app:layout_constraintLeft_toRightOf="@id/tv_accessibility"
-                app:layout_constraintTop_toTopOf="@id/tv_accessibility" />
-
-            <Button
-                android:id="@+id/btn_to_accessibility_settings"
-                style="@style/defButtonStyle"
-                android:text="@string/btn_to_settings"
-                app:layout_constraintBottom_toBottomOf="@id/tv_accessibility"
-                app:layout_constraintRight_toRightOf="parent"
-                app:layout_constraintTop_toTopOf="@id/tv_accessibility" />
-
-            <TextView
-                android:id="@+id/tv_monitor"
-                style="@style/defTextStyle"
-                android:layout_marginTop="@dimen/space"
-                android:text="@string/tv_monitor_status"
-                app:layout_constraintLeft_toLeftOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/tv_accessibility" />
-
-            <TextView
-                android:id="@+id/tv_monitor_status"
-                style="@style/defTextStyle"
-                app:layout_constraintBottom_toBottomOf="@id/tv_monitor"
-                app:layout_constraintLeft_toRightOf="@id/tv_monitor"
-                app:layout_constraintTop_toTopOf="@id/tv_monitor" />
-
-            <Button
-                android:id="@+id/btn_monitor_status_off"
-                style="@style/defButtonStyle"
-                android:text="@string/btn_off"
-                app:layout_constraintBottom_toBottomOf="@id/tv_monitor"
-                app:layout_constraintRight_toRightOf="parent"
-                app:layout_constraintTop_toTopOf="@id/tv_monitor" />
-
-            <Button
-                android:id="@+id/btn_monitor_status_on"
-                style="@style/defButtonStyle"
-                android:layout_marginRight="10dp"
-                android:text="@string/btn_on"
-                app:layout_constraintBottom_toBottomOf="@id/tv_monitor"
-                app:layout_constraintRight_toLeftOf="@id/btn_monitor_status_off"
-                app:layout_constraintTop_toTopOf="@id/tv_monitor" />
-
-        </androidx.constraintlayout.widget.ConstraintLayout>
-
-        <TextView
-            android:id="@+id/tv_privilege_title"
-            style="@style/areaTitleStyle"
-            android:text="@string/tv_privilege_title"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/cl_service_status" />
-
-        <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/cl_privilege"
-            style="@style/areaStyle"
-            android:background="@drawable/area_border_line"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tv_privilege_title">
-
-            <TextView
-                android:id="@+id/tv_privilege"
-                style="@style/defTextStyle"
-                android:layout_marginTop="20dp"
-                android:text="@string/tv_privilege_status"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-
-            <TextView
-                android:id="@+id/tv_privilege_status"
-                style="@style/defTextStyle"
-                app:layout_constraintBottom_toBottomOf="@id/tv_privilege"
-                app:layout_constraintLeft_toRightOf="@id/tv_privilege"
-                app:layout_constraintTop_toTopOf="@id/tv_privilege" />
-
-            <ImageButton
-                android:id="@+id/ib_privilege_help"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:background="@null"
-                android:contentDescription="@string/dialog_privilege_title"
-                android:padding="8dp"
-                android:scaleType="fitCenter"
-                android:src="@drawable/help"
-                app:layout_constraintBottom_toBottomOf="@id/tv_privilege"
-                app:layout_constraintRight_toRightOf="parent"
-                app:layout_constraintTop_toTopOf="@id/tv_privilege" />
-
-            <Button
-                android:id="@+id/btn_scheme"
-                style="@style/defButtonStyle"
-                android:layout_marginRight="5dp"
-                android:text="@string/btn_scheme"
-                app:layout_constraintBottom_toBottomOf="@id/tv_privilege"
-                app:layout_constraintRight_toLeftOf="@id/ib_privilege_help"
-                app:layout_constraintTop_toTopOf="@id/tv_privilege" />
-
-            <!-- 独立授权入口：Shizuku 与 Root 分开申请；均不可申请时整行隐藏 -->
+            <!-- 自定义轻量标题栏（替代原生 ActionBar）；右侧放一次性操作“解除隐藏API限制” -->
             <LinearLayout
-                android:id="@+id/row_grants"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space"
-                android:orientation="horizontal"
+                android:id="@+id/cl_custom_title"
+                style="@style/CustomTitleBarStyle"
                 app:layout_constraintLeft_toLeftOf="parent"
                 app:layout_constraintRight_toRightOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/tv_privilege">
+                app:layout_constraintTop_toTopOf="parent">
 
-                <Button
-                    android:id="@+id/btn_grant_shizuku"
-                    style="@style/defButtonStyle"
-                    android:layout_width="0dp"
+                <TextView
+                    android:id="@+id/tv_custom_title"
+                    style="@style/CustomTitleTextStyle"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginRight="5dp"
-                    android:text="@string/btn_grant_shizuku" />
+                    android:text="@string/title_activity_main" />
 
-                <Button
-                    android:id="@+id/btn_grant_root"
-                    style="@style/defButtonStyle"
+                <View
                     android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:layout_weight="1" />
+
+                <!-- 加入保活白名单：仅 Shizuku/Root 可用，常态无需，与解除隐藏API限制一同置于右上角、缩小尺寸 -->
+                <Button
+                    android:id="@+id/btn_keep_alive"
+                    style="@style/defButtonStyle"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginLeft="5dp"
-                    android:text="@string/btn_grant_root" />
+                    android:minHeight="28dp"
+                    android:minWidth="0dp"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp"
+                    android:textSize="11sp"
+                    android:text="@string/btn_keep_alive" />
+
+                <!-- 仅首次启用需要，常态无需，故置于右上角、缩小尺寸避免占地方 -->
+                <Button
+                    android:id="@+id/btn_relax_hidden_api"
+                    style="@style/defButtonStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:minHeight="28dp"
+                    android:minWidth="0dp"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp"
+                    android:textSize="11sp"
+                    android:text="@string/btn_relax_hidden_api" />
             </LinearLayout>
 
+            <TextView
+                android:id="@+id/tv_service_status_title"
+                style="@style/areaTitleStyle"
+                android:text="@string/tv_service_status"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/cl_custom_title" />
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/cl_service_status"
+                style="@style/areaStyle"
+                android:background="@drawable/area_border_line"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintRight_toRightOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/tv_service_status_title">
+
+                <TextView
+                    android:id="@+id/tv_accessibility"
+                    style="@style/defTextStyle"
+                    android:layout_marginTop="20dp"
+                    android:text="@string/tv_accessibility_status"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <TextView
+                    android:id="@+id/tv_accessibility_status"
+                    style="@style/defTextStyle"
+                    app:layout_constraintBottom_toBottomOf="@id/tv_accessibility"
+                    app:layout_constraintLeft_toRightOf="@id/tv_accessibility"
+                    app:layout_constraintTop_toTopOf="@id/tv_accessibility" />
+
+                <Button
+                    android:id="@+id/btn_to_accessibility_settings"
+                    style="@style/defButtonStyle"
+                    android:text="@string/btn_to_settings"
+                    app:layout_constraintBottom_toBottomOf="@id/tv_accessibility"
+                    app:layout_constraintRight_toRightOf="parent"
+                    app:layout_constraintTop_toTopOf="@id/tv_accessibility" />
+
+                <TextView
+                    android:id="@+id/tv_monitor"
+                    style="@style/defTextStyle"
+                    android:layout_marginTop="@dimen/space"
+                    android:text="@string/tv_monitor_status"
+                    app:layout_constraintLeft_toLeftOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/tv_accessibility" />
+
+                <TextView
+                    android:id="@+id/tv_monitor_status"
+                    style="@style/defTextStyle"
+                    app:layout_constraintBottom_toBottomOf="@id/tv_monitor"
+                    app:layout_constraintLeft_toRightOf="@id/tv_monitor"
+                    app:layout_constraintTop_toTopOf="@id/tv_monitor" />
+
+                <Button
+                    android:id="@+id/btn_monitor_status_off"
+                    style="@style/defButtonStyle"
+                    android:text="@string/btn_off"
+                    app:layout_constraintBottom_toBottomOf="@id/tv_monitor"
+                    app:layout_constraintRight_toRightOf="parent"
+                    app:layout_constraintTop_toTopOf="@id/tv_monitor" />
+
+                <Button
+                    android:id="@+id/btn_monitor_status_on"
+                    style="@style/defButtonStyle"
+                    android:layout_marginRight="10dp"
+                    android:text="@string/btn_on"
+                    app:layout_constraintBottom_toBottomOf="@id/tv_monitor"
+                    app:layout_constraintRight_toLeftOf="@id/btn_monitor_status_off"
+                    app:layout_constraintTop_toTopOf="@id/tv_monitor" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <TextView
+                android:id="@+id/tv_privilege_title"
+                style="@style/areaTitleStyle"
+                android:text="@string/tv_privilege_title"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/cl_service_status" />
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/cl_privilege"
+                style="@style/areaStyle"
+                android:background="@drawable/area_border_line"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintRight_toRightOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/tv_privilege_title">
+
+                <TextView
+                    android:id="@+id/tv_privilege"
+                    style="@style/defTextStyle"
+                    android:layout_marginTop="20dp"
+                    android:text="@string/tv_privilege_status"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <TextView
+                    android:id="@+id/tv_privilege_status"
+                    style="@style/defTextStyle"
+                    android:layout_width="0dp"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    app:layout_constraintBottom_toBottomOf="@id/tv_privilege"
+                    app:layout_constraintLeft_toRightOf="@id/tv_privilege"
+                    app:layout_constraintRight_toLeftOf="@id/ib_privilege_help"
+                    app:layout_constraintTop_toTopOf="@id/tv_privilege" />
+
+                <ImageButton
+                    android:id="@+id/ib_privilege_help"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:background="@null"
+                    android:contentDescription="@string/dialog_privilege_title"
+                    android:padding="8dp"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/help"
+                    app:layout_constraintBottom_toBottomOf="@id/tv_privilege"
+                    app:layout_constraintRight_toRightOf="parent"
+                    app:layout_constraintTop_toTopOf="@id/tv_privilege" />
+
+                <!-- 独立授权入口：Shizuku 与 Root 分开申请；均不可申请时整行隐藏 -->
+                <LinearLayout
+                    android:id="@+id/row_grants"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space"
+                    android:orientation="horizontal"
+                    app:layout_constraintLeft_toLeftOf="parent"
+                    app:layout_constraintRight_toRightOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/tv_privilege">
+
+                    <Button
+                        android:id="@+id/btn_grant_shizuku"
+                        style="@style/defButtonStyle"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginRight="5dp"
+                        android:text="@string/btn_grant_shizuku" />
+
+                    <Button
+                        android:id="@+id/btn_grant_root"
+                        style="@style/defButtonStyle"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginLeft="5dp"
+                        android:text="@string/btn_grant_root" />
+                </LinearLayout>
+
+                <Button
+                    android:id="@+id/btn_enable_accessibility_auto"
+                    style="@style/defButtonStyle"
+                    android:layout_width="0dp"
+                    android:layout_marginTop="@dimen/space"
+                    android:layout_marginRight="5dp"
+                    android:text="@string/btn_enable_accessibility_auto"
+                    app:layout_constraintLeft_toLeftOf="parent"
+                    app:layout_constraintRight_toLeftOf="@id/btn_scheme"
+                    app:layout_constraintTop_toBottomOf="@id/row_grants" />
+
+                <!-- 授权方案选择：从顶部行下移到「一键开启无障碍」同行右侧，原「加入保活白名单」已移至标题栏 -->
+                <Button
+                    android:id="@+id/btn_scheme"
+                    style="@style/defButtonStyle"
+                    android:layout_width="0dp"
+                    android:layout_marginLeft="5dp"
+                    android:text="@string/btn_scheme"
+                    app:layout_constraintBottom_toBottomOf="@id/btn_enable_accessibility_auto"
+                    app:layout_constraintLeft_toRightOf="@id/btn_enable_accessibility_auto"
+                    app:layout_constraintRight_toRightOf="parent"
+                    app:layout_constraintTop_toTopOf="@id/btn_enable_accessibility_auto" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <TextView
+                android:id="@+id/tv_config_title"
+                style="@style/areaTitleStyle"
+                android:text="@string/tv_config_title"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/cl_privilege" />
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:id="@+id/cl_config"
+                style="@style/areaStyle"
+                android:background="@drawable/area_border_line"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintRight_toRightOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/tv_config_title">
+
+                <TextView
+                    android:id="@+id/tv_monitor_global"
+                    style="@style/defTextStyle"
+                    android:layout_marginTop="@dimen/space"
+                    android:text="@string/tv_monitor_global"
+                    app:layout_constraintLeft_toLeftOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <CheckBox
+                    android:id="@+id/cb_monitor_global"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:layout_constraintBottom_toBottomOf="@id/tv_monitor_global"
+                    app:layout_constraintLeft_toRightOf="@id/tv_monitor_global"
+                    app:layout_constraintTop_toTopOf="@id/tv_monitor_global" />
+
+                <Button
+                    android:id="@+id/btn_monitor_list"
+                    style="@style/defButtonStyle"
+                    android:text="@string/btn_monitor_list"
+                    app:layout_constraintBottom_toBottomOf="@id/tv_monitor_global"
+                    app:layout_constraintRight_toRightOf="parent"
+                    app:layout_constraintTop_toTopOf="@id/tv_monitor_global" />
+
+                <TextView
+                    android:id="@+id/tv_interval"
+                    style="@style/defTextStyle"
+                    android:layout_marginTop="@dimen/space"
+                    android:text="@string/tv_interval"
+                    app:layout_constraintLeft_toLeftOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/tv_monitor_global" />
+
+                <EditText
+                    android:id="@+id/et_interval"
+                    style="@style/defEditStyle"
+                    app:layout_constraintBottom_toBottomOf="@id/tv_interval"
+                    app:layout_constraintRight_toRightOf="parent"
+                    app:layout_constraintTop_toTopOf="@id/tv_interval" />
+
+                <TextView
+                    android:id="@+id/tv_delay"
+                    style="@style/defTextStyle"
+                    android:layout_marginTop="@dimen/space"
+                    android:text="@string/tv_delay"
+                    app:layout_constraintLeft_toLeftOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/tv_interval" />
+
+                <EditText
+                    android:id="@+id/et_delay"
+                    style="@style/defEditStyle"
+                    app:layout_constraintBottom_toBottomOf="@id/tv_delay"
+                    app:layout_constraintRight_toRightOf="parent"
+                    app:layout_constraintTop_toTopOf="@id/tv_delay" />
+
+                <TextView
+                    android:id="@+id/tv_ignore"
+                    style="@style/defTextStyle"
+                    android:layout_marginTop="@dimen/space"
+                    android:text="@string/tv_ignore"
+                    app:layout_constraintLeft_toLeftOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/tv_delay" />
+
+                <EditText
+                    android:id="@+id/et_ignore"
+                    style="@style/defEditStyle"
+                    app:layout_constraintBottom_toBottomOf="@id/tv_ignore"
+                    app:layout_constraintRight_toRightOf="parent"
+                    app:layout_constraintTop_toTopOf="@id/tv_ignore" />
+
+                <TextView
+                    android:id="@+id/tv_period"
+                    style="@style/defTextStyle"
+                    android:layout_marginTop="@dimen/space"
+                    android:text="@string/tv_period_refresh"
+                    app:layout_constraintLeft_toLeftOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/tv_ignore" />
+
+                <EditText
+                    android:id="@+id/et_period"
+                    style="@style/defEditStyle"
+                    app:layout_constraintBottom_toBottomOf="@id/tv_period"
+                    app:layout_constraintRight_toRightOf="parent"
+                    app:layout_constraintTop_toTopOf="@id/tv_period" />
+
+                <TextView
+                    android:id="@+id/tv_monitor_touch"
+                    style="@style/defTextStyle"
+                    android:layout_marginTop="@dimen/space"
+                    android:text="@string/tv_monitor_touch"
+                    app:layout_constraintLeft_toLeftOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/tv_period" />
+
+                <CheckBox
+                    android:id="@+id/cb_monitor_touch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:layout_constraintBottom_toBottomOf="@id/tv_monitor_touch"
+                    app:layout_constraintLeft_toRightOf="@id/tv_monitor_touch"
+                    app:layout_constraintTop_toTopOf="@id/tv_monitor_touch" />
+
+                <TextView
+                    android:id="@+id/tv_monitor_key"
+                    style="@style/defTextStyle"
+                    android:text="@string/tv_monitor_key"
+                    app:layout_constraintBottom_toBottomOf="@id/tv_monitor_touch"
+                    app:layout_constraintRight_toLeftOf="@id/cb_monitor_key"
+                    app:layout_constraintTop_toTopOf="@id/tv_monitor_touch" />
+
+                <CheckBox
+                    android:id="@+id/cb_monitor_key"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:layout_constraintBottom_toBottomOf="@id/tv_monitor_key"
+                    app:layout_constraintRight_toRightOf="parent"
+                    app:layout_constraintTop_toTopOf="@id/tv_monitor_key" />
+
+
+                <TextView
+                    android:id="@+id/tv_auto_detect_reading"
+                    style="@style/defTextStyle"
+                    android:layout_marginTop="@dimen/space"
+                    android:text="@string/tv_auto_detect_reading"
+                    app:layout_constraintLeft_toLeftOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/tv_monitor_key" />
+
+                <ImageButton
+                    android:id="@+id/ib_reading_whitelist_help"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:background="@null"
+                    android:contentDescription="@string/btn_reading_whitelist_hint"
+                    android:padding="8dp"
+                    android:scaleType="fitCenter"
+                    android:src="@drawable/help"
+                    app:layout_constraintBottom_toBottomOf="@id/tv_auto_detect_reading"
+                    app:layout_constraintLeft_toRightOf="@id/tv_auto_detect_reading"
+                    app:layout_constraintTop_toTopOf="@id/tv_auto_detect_reading" />
+
+                <CheckBox
+                    android:id="@+id/cb_auto_detect_reading"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:layout_constraintBottom_toBottomOf="@id/tv_auto_detect_reading"
+                    app:layout_constraintLeft_toRightOf="@id/ib_reading_whitelist_help"
+                    app:layout_constraintTop_toTopOf="@id/tv_auto_detect_reading" />
+
+
+                <Button
+                    android:id="@+id/btn_reading_whitelist"
+                    style="@style/defButtonStyle"
+                    android:text="@string/btn_reading_whitelist"
+                    app:layout_constraintBottom_toBottomOf="@id/tv_auto_detect_reading"
+                    app:layout_constraintRight_toRightOf="parent"
+                    app:layout_constraintTop_toTopOf="@id/tv_auto_detect_reading" />
+
+                <TextView
+                    android:id="@+id/tv_hide_background_task"
+                    style="@style/defTextStyle"
+                    android:layout_marginTop="@dimen/space"
+                    android:text="@string/tv_hide_background_task"
+                    app:layout_constraintLeft_toLeftOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/tv_auto_detect_reading" />
+
+                <CheckBox
+                    android:id="@+id/cb_hide_background_task"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:layout_constraintBottom_toBottomOf="@id/tv_hide_background_task"
+                    app:layout_constraintLeft_toRightOf="@id/tv_hide_background_task"
+                    app:layout_constraintTop_toTopOf="@id/tv_hide_background_task" />
+
+                <Button
+                    android:id="@+id/btn_save"
+                    style="@style/defButtonStyle"
+                    android:layout_marginTop="@dimen/space"
+                    android:text="@string/btn_save"
+                    app:layout_constraintLeft_toLeftOf="parent"
+                    app:layout_constraintRight_toRightOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/tv_hide_background_task" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <!-- 测试 / 退出按钮：跟随内容排列在配置区下方（不再钉在屏幕底部遮挡） -->
             <Button
-                android:id="@+id/btn_enable_accessibility_auto"
+                android:id="@+id/btn_test"
                 style="@style/defButtonStyle"
                 android:layout_width="0dp"
-                android:layout_marginTop="@dimen/space"
+                android:layout_marginLeft="@dimen/area_margin"
+                android:layout_marginTop="12dp"
                 android:layout_marginRight="5dp"
-                android:text="@string/btn_enable_accessibility_auto"
+                android:text="@string/btn_test"
                 app:layout_constraintLeft_toLeftOf="parent"
-                app:layout_constraintRight_toLeftOf="@id/btn_keep_alive"
-                app:layout_constraintTop_toBottomOf="@id/row_grants" />
+                app:layout_constraintRight_toLeftOf="@id/btn_exit"
+                app:layout_constraintTop_toBottomOf="@id/cl_config" />
 
             <Button
-                android:id="@+id/btn_keep_alive"
+                android:id="@+id/btn_exit"
                 style="@style/defButtonStyle"
                 android:layout_width="0dp"
                 android:layout_marginLeft="5dp"
-                android:text="@string/btn_keep_alive"
-                app:layout_constraintBottom_toBottomOf="@id/btn_enable_accessibility_auto"
-                app:layout_constraintLeft_toRightOf="@id/btn_enable_accessibility_auto"
+                android:layout_marginRight="@dimen/area_margin"
+                android:text="@string/btn_exit"
+                app:layout_constraintBottom_toBottomOf="@id/btn_test"
+                app:layout_constraintLeft_toRightOf="@id/btn_test"
                 app:layout_constraintRight_toRightOf="parent"
-                app:layout_constraintTop_toTopOf="@id/btn_enable_accessibility_auto" />
-
-            <Button
-                android:id="@+id/btn_relax_hidden_api"
-                style="@style/defButtonStyle"
-                android:layout_width="0dp"
-                android:layout_marginTop="@dimen/space"
-                android:text="@string/btn_relax_hidden_api"
-                app:layout_constraintLeft_toLeftOf="parent"
-                app:layout_constraintRight_toRightOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/btn_enable_accessibility_auto" />
+                app:layout_constraintTop_toTopOf="@id/btn_test" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
-
-        <TextView
-            android:id="@+id/tv_config_title"
-            style="@style/areaTitleStyle"
-            android:text="@string/tv_config_title"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/cl_privilege" />
-
-        <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/cl_config"
-            style="@style/areaStyle"
-            android:background="@drawable/area_border_line"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tv_config_title">
-
-            <TextView
-                android:id="@+id/tv_monitor_global"
-                style="@style/defTextStyle"
-                android:layout_marginTop="@dimen/space"
-                android:text="@string/tv_monitor_global"
-                app:layout_constraintLeft_toLeftOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-
-            <CheckBox
-                android:id="@+id/cb_monitor_global"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                app:layout_constraintBottom_toBottomOf="@id/tv_monitor_global"
-                app:layout_constraintLeft_toRightOf="@id/tv_monitor_global"
-                app:layout_constraintTop_toTopOf="@id/tv_monitor_global" />
-
-            <Button
-                android:id="@+id/btn_monitor_list"
-                style="@style/defButtonStyle"
-                android:text="@string/btn_monitor_list"
-                app:layout_constraintBottom_toBottomOf="@id/tv_monitor_global"
-                app:layout_constraintRight_toRightOf="parent"
-                app:layout_constraintTop_toTopOf="@id/tv_monitor_global" />
-
-            <TextView
-                android:id="@+id/tv_interval"
-                style="@style/defTextStyle"
-                android:layout_marginTop="@dimen/space"
-                android:text="@string/tv_interval"
-                app:layout_constraintLeft_toLeftOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/tv_monitor_global"/>
-
-            <EditText
-                android:id="@+id/et_interval"
-                style="@style/defEditStyle"
-                app:layout_constraintBottom_toBottomOf="@id/tv_interval"
-                app:layout_constraintRight_toRightOf="parent"
-                app:layout_constraintTop_toTopOf="@id/tv_interval" />
-
-            <TextView
-                android:id="@+id/tv_delay"
-                style="@style/defTextStyle"
-                android:layout_marginTop="@dimen/space"
-                android:text="@string/tv_delay"
-                app:layout_constraintLeft_toLeftOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/tv_interval" />
-
-            <EditText
-                android:id="@+id/et_delay"
-                style="@style/defEditStyle"
-                app:layout_constraintBottom_toBottomOf="@id/tv_delay"
-                app:layout_constraintRight_toRightOf="parent"
-                app:layout_constraintTop_toTopOf="@id/tv_delay" />
-
-            <TextView
-                android:id="@+id/tv_ignore"
-                style="@style/defTextStyle"
-                android:layout_marginTop="@dimen/space"
-                android:text="@string/tv_ignore"
-                app:layout_constraintLeft_toLeftOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/tv_delay" />
-
-            <EditText
-                android:id="@+id/et_ignore"
-                style="@style/defEditStyle"
-                app:layout_constraintBottom_toBottomOf="@id/tv_ignore"
-                app:layout_constraintRight_toRightOf="parent"
-                app:layout_constraintTop_toTopOf="@id/tv_ignore" />
-
-            <TextView
-                android:id="@+id/tv_period"
-                style="@style/defTextStyle"
-                android:layout_marginTop="@dimen/space"
-                android:text="@string/tv_period_refresh"
-                app:layout_constraintLeft_toLeftOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/tv_ignore" />
-
-            <EditText
-                android:id="@+id/et_period"
-                style="@style/defEditStyle"
-                app:layout_constraintBottom_toBottomOf="@id/tv_period"
-                app:layout_constraintRight_toRightOf="parent"
-                app:layout_constraintTop_toTopOf="@id/tv_period" />
-
-            <TextView
-                android:id="@+id/tv_monitor_touch"
-                style="@style/defTextStyle"
-                android:layout_marginTop="@dimen/space"
-                android:text="@string/tv_monitor_touch"
-                app:layout_constraintLeft_toLeftOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/tv_period" />
-
-            <CheckBox
-                android:id="@+id/cb_monitor_touch"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                app:layout_constraintBottom_toBottomOf="@id/tv_monitor_touch"
-                app:layout_constraintLeft_toRightOf="@id/tv_monitor_touch"
-                app:layout_constraintTop_toTopOf="@id/tv_monitor_touch" />
-
-            <TextView
-                android:id="@+id/tv_monitor_key"
-                style="@style/defTextStyle"
-                android:text="@string/tv_monitor_key"
-                app:layout_constraintBottom_toBottomOf="@id/tv_monitor_touch"
-                app:layout_constraintRight_toLeftOf="@id/cb_monitor_key"
-                app:layout_constraintTop_toTopOf="@id/tv_monitor_touch" />
-
-            <CheckBox
-                android:id="@+id/cb_monitor_key"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                app:layout_constraintBottom_toBottomOf="@id/tv_monitor_key"
-                app:layout_constraintRight_toRightOf="parent"
-                app:layout_constraintTop_toTopOf="@id/tv_monitor_key" />
-
-
-            <TextView
-                android:id="@+id/tv_auto_detect_reading"
-                style="@style/defTextStyle"
-                android:layout_marginTop="@dimen/space"
-                android:text="@string/tv_auto_detect_reading"
-                app:layout_constraintLeft_toLeftOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/tv_monitor_key" />
-
-            <ImageButton
-                android:id="@+id/ib_reading_whitelist_help"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:background="@null"
-                android:contentDescription="@string/btn_reading_whitelist_hint"
-                android:padding="8dp"
-                android:scaleType="fitCenter"
-                android:src="@drawable/help"
-                app:layout_constraintBottom_toBottomOf="@id/tv_auto_detect_reading"
-                app:layout_constraintLeft_toRightOf="@id/tv_auto_detect_reading"
-                app:layout_constraintTop_toTopOf="@id/tv_auto_detect_reading" />
-
-            <CheckBox
-                android:id="@+id/cb_auto_detect_reading"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                app:layout_constraintBottom_toBottomOf="@id/tv_auto_detect_reading"
-                app:layout_constraintLeft_toRightOf="@id/ib_reading_whitelist_help"
-                app:layout_constraintTop_toTopOf="@id/tv_auto_detect_reading" />
-
-
-            <Button
-                android:id="@+id/btn_reading_whitelist"
-                style="@style/defButtonStyle"
-                android:text="@string/btn_reading_whitelist"
-                app:layout_constraintBottom_toBottomOf="@id/tv_auto_detect_reading"
-                app:layout_constraintRight_toRightOf="parent"
-                app:layout_constraintTop_toTopOf="@id/tv_auto_detect_reading" />
-
-            <TextView
-                android:id="@+id/tv_hide_background_task"
-                style="@style/defTextStyle"
-                android:layout_marginTop="@dimen/space"
-                android:text="@string/tv_hide_background_task"
-                app:layout_constraintLeft_toLeftOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/tv_auto_detect_reading" />
-
-            <CheckBox
-                android:id="@+id/cb_hide_background_task"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                app:layout_constraintBottom_toBottomOf="@id/tv_hide_background_task"
-                app:layout_constraintLeft_toRightOf="@id/tv_hide_background_task"
-                app:layout_constraintTop_toTopOf="@id/tv_hide_background_task" />
-
-            <Button
-                android:id="@+id/btn_save"
-                style="@style/defButtonStyle"
-                android:layout_marginTop="@dimen/space"
-                android:text="@string/btn_save"
-                app:layout_constraintLeft_toLeftOf="parent"
-                app:layout_constraintRight_toRightOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/tv_hide_background_task" />
-
-        </androidx.constraintlayout.widget.ConstraintLayout>
-
-        <Button
-            android:id="@+id/btn_test"
-            style="@style/defButtonStyle"
-            android:layout_width="0dp"
-            android:layout_marginLeft="@dimen/area_margin"
-            android:layout_marginRight="5dp"
-            android:layout_marginBottom="10dp"
-            android:text="@string/btn_test"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintRight_toLeftOf="@id/btn_exit" />
-
-        <Button
-            android:id="@+id/btn_exit"
-            style="@style/defButtonStyle"
-            android:layout_width="0dp"
-            android:layout_marginLeft="5dp"
-            android:layout_marginRight="@dimen/area_margin"
-            android:text="@string/btn_exit"
-            app:layout_constraintBottom_toBottomOf="@id/btn_test"
-            app:layout_constraintLeft_toRightOf="@id/btn_test"
-            app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintTop_toTopOf="@id/btn_test" />
-
-    </androidx.constraintlayout.widget.ConstraintLayout>
+    </ScrollView>
 </layout>
