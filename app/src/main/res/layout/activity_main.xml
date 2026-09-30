@@ -95,11 +95,87 @@
         </androidx.constraintlayout.widget.ConstraintLayout>
 
         <TextView
+            android:id="@+id/tv_privilege_title"
+            style="@style/areaTitleStyle"
+            android:text="@string/tv_privilege_title"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/cl_service_status" />
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/cl_privilege"
+            style="@style/areaStyle"
+            android:background="@drawable/area_border_line"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tv_privilege_title">
+
+            <TextView
+                android:id="@+id/tv_privilege"
+                style="@style/defTextStyle"
+                android:layout_marginTop="20dp"
+                android:text="@string/tv_privilege_status"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <TextView
+                android:id="@+id/tv_privilege_status"
+                style="@style/defTextStyle"
+                app:layout_constraintBottom_toBottomOf="@id/tv_privilege"
+                app:layout_constraintLeft_toRightOf="@id/tv_privilege"
+                app:layout_constraintTop_toTopOf="@id/tv_privilege" />
+
+            <ImageButton
+                android:id="@+id/ib_privilege_help"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:background="@null"
+                android:contentDescription="@string/dialog_privilege_title"
+                android:padding="8dp"
+                android:scaleType="fitCenter"
+                android:src="@drawable/help"
+                app:layout_constraintBottom_toBottomOf="@id/tv_privilege"
+                app:layout_constraintRight_toRightOf="parent"
+                app:layout_constraintTop_toTopOf="@id/tv_privilege" />
+
+            <Button
+                android:id="@+id/btn_privilege_grant"
+                style="@style/defButtonStyle"
+                android:layout_marginRight="5dp"
+                android:text="@string/btn_privilege_grant"
+                app:layout_constraintBottom_toBottomOf="@id/tv_privilege"
+                app:layout_constraintRight_toLeftOf="@id/ib_privilege_help"
+                app:layout_constraintTop_toTopOf="@id/tv_privilege" />
+
+            <Button
+                android:id="@+id/btn_enable_accessibility_auto"
+                style="@style/defButtonStyle"
+                android:layout_width="0dp"
+                android:layout_marginTop="@dimen/space"
+                android:layout_marginRight="5dp"
+                android:text="@string/btn_enable_accessibility_auto"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintRight_toLeftOf="@id/btn_keep_alive"
+                app:layout_constraintTop_toBottomOf="@id/tv_privilege" />
+
+            <Button
+                android:id="@+id/btn_keep_alive"
+                style="@style/defButtonStyle"
+                android:layout_width="0dp"
+                android:layout_marginLeft="5dp"
+                android:text="@string/btn_keep_alive"
+                app:layout_constraintBottom_toBottomOf="@id/btn_enable_accessibility_auto"
+                app:layout_constraintLeft_toRightOf="@id/btn_enable_accessibility_auto"
+                app:layout_constraintRight_toRightOf="parent"
+                app:layout_constraintTop_toTopOf="@id/btn_enable_accessibility_auto" />
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <TextView
             android:id="@+id/tv_config_title"
             style="@style/areaTitleStyle"
             android:text="@string/tv_config_title"
             app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/cl_service_status" />
+            app:layout_constraintTop_toBottomOf="@id/cl_privilege" />
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/cl_config"

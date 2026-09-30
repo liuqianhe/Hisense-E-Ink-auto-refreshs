@@ -3,21 +3,16 @@ package com.liziwa.hisense_autorefresh
 import com.liziwa.hisense_autorefresh.AppPreferences
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.AccessibilityServiceInfo
-import android.annotation.SuppressLint
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.graphics.PixelFormat
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.Message
 import android.os.SystemClock
 import android.view.KeyEvent
-import android.view.MotionEvent
-import android.view.View
-import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 import androidx.core.content.ContextCompat
@@ -34,7 +29,7 @@ import com.liziwa.hisense_autorefresh.util.Utils
  * - 监控范围：全局或指定应用（targetPackageName）/ 阅读白名单（readingWhitelist）
  * - 配置通过 ACTION_CONFIG_CHANGE 广播热更新（见 updateConfig）
  */
-class EInkAccessibilityService : AccessibilityService(), View.OnTouchListener {
+class EInkAccessibilityService : AccessibilityService() {
 
     private lateinit var prefs: AppPreferences
 
@@ -64,9 +59,7 @@ class EInkAccessibilityService : AccessibilityService(), View.OnTouchListener {
 
     private var ignoreApps = arrayOf<String>("com.android.systemui")
 
-    private var addTouchView = false;
     private var serviceConn = false;
-    private lateinit var touchView: View
 
     private val notificationUtils = NotificationUtils.getInstance(this)
 
@@ -133,11 +126,6 @@ class EInkAccessibilityService : AccessibilityService(), View.OnTouchListener {
                     "periodRefresh=$periodRefresh, " +
                     "isReading(初始)=$isReading"
         )
-        if (prefs.permissionOverlay == 1 && serviceSwitch) {
-            createTouchCapture()
-        } else {
-            deleteTouchCapture()
-        }
         if (serviceConn) {
             notificationUtils.showNotification(
                 if (serviceSwitch) getString(R.string.notification_text) else getString(R.string.notification_text_stop),
@@ -201,46 +189,15 @@ class EInkAccessibilityService : AccessibilityService(), View.OnTouchListener {
         }
     }
 
-    private fun createTouchCapture() {
-        if (addTouchView) return
-        XLog.d("createTouchCapture: ")
-        if (!this::touchView.isInitialized) {
-            touchView = View(applicationContext)
-            touchView.setOnTouchListener(this)
-        }
-
-        val flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH
-
-        val lp = WindowManager.LayoutParams(
-            1,
-            1,
-            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
-            flags,
-            PixelFormat.TRANSPARENT
-        )
-
-        // 添加到窗口管理器
-        val wm = getSystemService(WINDOW_SERVICE) as WindowManager
-        wm.addView(touchView, lp)
-        addTouchView = true
-    }
-
-    private fun deleteTouchCapture() {
-        if (!addTouchView) return
-        XLog.d("deleteTouchCapture: ")
-        val wm = getSystemService(WINDOW_SERVICE) as WindowManager
-        wm.removeView(touchView)
-        addTouchView = false
-    }
-
     override fun onServiceConnected() {
         super.onServiceConnected()
         XLog.d("无障碍服务已连接")
-        // 配置服务：监听窗口切换与点击事件；FLAG_REQUEST_FILTER_KEY_EVENTS 用于接收按键
+        // 配置服务：监听窗口切换与点击/滚动事件；FLAG_REQUEST_FILTER_KEY_EVENTS 用于接收按键
         val info = AccessibilityServiceInfo().apply {
             eventTypes =
-                AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED or AccessibilityEvent.TYPE_VIEW_CLICKED
+                AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED or
+                        AccessibilityEvent.TYPE_VIEW_CLICKED or
+                        AccessibilityEvent.TYPE_VIEW_SCROLLED
             feedbackType = AccessibilityServiceInfo.FEEDBACK_GENERIC
             notificationTimeout = 100
             flags = AccessibilityServiceInfo.DEFAULT or
@@ -279,28 +236,30 @@ class EInkAccessibilityService : AccessibilityService(), View.OnTouchListener {
         return false
     }
 
-    @SuppressLint("ClickableViewAccessibility")
-    override fun onTouch(v: View?, event: MotionEvent?): Boolean {
-        if (event == null) return false
-        if (event.action == MotionEvent.ACTION_OUTSIDE) {
-            XLog.d("onTouchEvent: monitorTouch=$monitorTouch, isTarget=$isTarget")
-            // 只处理目标应用内的点击
-            if (monitorTouch && isTarget) {
-                userOperating()
-            }
-        }
-        return false
-    }
-
     override fun onAccessibilityEvent(event: AccessibilityEvent) {
         if (!serviceSwitch) return
 
         try {
-            if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
-                handleWindowStateChanged(event)
+            when (event.eventType) {
+                AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> handleWindowStateChanged(event)
+                // 触摸计数改由无障碍事件驱动（不再创建 1x1 透明悬浮窗）：
+                // VIEW_CLICKED 命中标准控件的点击，VIEW_SCROLLED 覆盖翻页/滚动场景。
+                AccessibilityEvent.TYPE_VIEW_CLICKED,
+                AccessibilityEvent.TYPE_VIEW_SCROLLED -> handleUserAction(event)
             }
         } catch (e: Exception) {
             XLog.e("处理无障碍事件时出错", e)
+        }
+    }
+
+    /** 点击/滚动事件：在目标应用内计一次操作（由「响应触摸操作」开关控制） */
+    private fun handleUserAction(event: AccessibilityEvent) {
+        val pkg = event.packageName?.toString()
+        // 事件归属的包名与目标不符时忽略（避免其它应用/系统界面误计数）
+        if (pkg != null && currentPackage != null && pkg != currentPackage) return
+        XLog.d("操作事件: type=${event.eventType}, pkg=$pkg, monitorTouch=$monitorTouch, isTarget=$isTarget")
+        if (monitorTouch && isTarget) {
+            userOperating()
         }
     }
 
@@ -601,7 +560,6 @@ class EInkAccessibilityService : AccessibilityService(), View.OnTouchListener {
         XLog.d("无障碍服务被销毁")
         isRunning = false
         myHandler.removeCallbacksAndMessages(null)
-        deleteTouchCapture()
         unregisterReceiver(myReceiver)
     }
 }

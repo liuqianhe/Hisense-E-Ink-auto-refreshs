@@ -1,72 +1,23 @@
 package com.liziwa.hisense_autorefresh.util
 
-import android.app.Activity
 import android.app.AppOpsManager
 import android.content.Context
 import android.content.Context.APP_OPS_SERVICE
 import android.content.Context.POWER_SERVICE
 import android.content.Intent
-import android.os.Build
 import android.os.PowerManager
 import android.os.Process
 import android.provider.Settings
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.core.net.toUri
 import com.elvishew.xlog.XLog
 import com.liziwa.hisense_autorefresh.R
 
 /**
- * 运行时权限辅助类：悬浮窗、忽略电池优化、使用情况统计三类权限的检测与申请引导。
+ * 运行时权限辅助类：忽略电池优化、使用情况统计两类权限的检测与申请引导。
+ * （悬浮窗权限已移除：触摸计数改由无障碍事件完成，不再创建透明悬浮窗）
  */
 object PermissionHelper {
-
-    /** 检查悬浮窗（SYSTEM_ALERT_WINDOW）权限是否已授予 */
-    fun hasOverlayPermission(context: Context): Boolean {
-        return Settings.canDrawOverlays(context)
-    }
-
-    /** 请求悬浮窗权限：弹引导对话框，按系统版本跳转设置（Android 11+ 带返回标志） */
-    fun requestOverlayPermission(activity: Activity, requestCode: Int): AlertDialog {
-        XLog.d("requestOverlayPermission: ")
-        // 跳转前提示用户
-        return AlertDialog.Builder(activity)
-            .setTitle(R.string.request_permission_overlay_title)
-            .setMessage(R.string.request_permission_overlay_message)
-            .setPositiveButton(R.string.btn_to_settings) { dialog, which ->
-                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
-                    startOverlaySettings(activity, requestCode)
-                } else {
-                    requestOverlayPermissionForAndroid11Plus(activity, requestCode)
-                }
-            }
-            .setNegativeButton(R.string.btn_cancel) { dialog, which ->
-                dialog.dismiss()
-            }
-            .setCancelable(false)
-            .show()
-    }
-
-    private fun startOverlaySettings(activity: Activity, requestCode: Int) {
-        XLog.d( "startOverlaySettings: ")
-        val intent = Intent(
-            Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-            "package:${activity.packageName}".toUri()
-        )
-        activity.startActivityForResult(intent, requestCode)
-    }
-
-    @RequiresApi(Build.VERSION_CODES.R)
-    private fun requestOverlayPermissionForAndroid11Plus(activity: Activity, requestCode: Int) {
-        XLog.d( "requestOverlayPermissionForAndroid11Plus: ")
-        val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION).apply {
-            data = "package:${activity.packageName}".toUri()
-            // 添加额外标志确保返回当前应用
-            addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY)
-            addFlags(Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS)
-        }
-        activity.startActivityForResult(intent, requestCode)
-    }
 
     /** 跳转系统设置申请忽略电池优化权限 */
     fun requestIgnoreBatteryOptimizationsPermission(context: Context) {

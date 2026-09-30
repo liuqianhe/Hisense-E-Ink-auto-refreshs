@@ -2,6 +2,7 @@ package com.liziwa.hisense_autorefresh.activity
 
 import android.app.ActivityManager
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.provider.Settings
 import android.text.Editable
@@ -14,15 +15,21 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.databinding.DataBindingUtil
+import androidx.lifecycle.lifecycleScope
 import com.elvishew.xlog.XLog
 import com.liziwa.hisense_autorefresh.AppPreferences
 import com.liziwa.hisense_autorefresh.EInkAccessibilityService
 import com.liziwa.hisense_autorefresh.MyApp
 import com.liziwa.hisense_autorefresh.util.PermissionHelper
 import com.liziwa.hisense_autorefresh.R
+import com.liziwa.hisense_autorefresh.util.PrivilegedShell
 import com.liziwa.hisense_autorefresh.util.Utils
 import com.liziwa.hisense_autorefresh.databinding.ActivityMainBinding
 import com.liziwa.hisense_autorefresh.util.NotificationUtils
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import rikka.shizuku.Shizuku
 
 /**
  * 主界面：展示/配置监控开关、阈值、监控范围与阅读白名单，并引导权限申请。
@@ -32,10 +39,33 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var prefs: AppPreferences
-    private val PERMISSION_REQUEST_OVERLAY = 1001
+    private val REQUEST_SHIZUKU_PERMISSION = 2001
     private var titleClickCount = 0 // 主标题连点计数，达到阈值切换调试模式
 
     private var dialog: AlertDialog? = null
+
+    /** Shizuku 授权结果回调（Shizuku 运行在独立进程，需异步回调） */
+    private val shizukuResultListener =
+        Shizuku.OnRequestPermissionResultListener { requestCode, grantResult ->
+            if (requestCode == REQUEST_SHIZUKU_PERMISSION) {
+                val granted = grantResult == PackageManager.PERMISSION_GRANTED
+                XLog.i("MainActivity: Shizuku 授权结果 granted=$granted")
+                runOnUiThread {
+                    Toast.makeText(
+                        this,
+                        if (granted) R.string.toast_shizuku_granted else R.string.toast_shizuku_denied,
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    refreshPrivilegeStatus()
+                }
+            }
+        }
+
+    /** Shizuku 服务上线时刷新授权状态 */
+    private val shizukuBinderListener = Shizuku.OnBinderReceivedListener {
+        XLog.d("MainActivity: Shizuku binder 已连接")
+        runOnUiThread { refreshPrivilegeStatus() }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -50,6 +80,10 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         prefs = AppPreferences.getInstance(applicationContext)
 
         binding.btnToAccessibilitySettings.setOnClickListener { this.onClick(it) }
+        binding.btnEnableAccessibilityAuto.setOnClickListener { this.onClick(it) }
+        binding.btnKeepAlive.setOnClickListener { this.onClick(it) }
+        binding.btnPrivilegeGrant.setOnClickListener { this.onClick(it) }
+        binding.ibPrivilegeHelp.setOnClickListener { this.onClick(it) }
         binding.btnMonitorStatusOn.setOnClickListener { this.onClick(it) }
         binding.btnMonitorStatusOff.setOnClickListener { this.onClick(it) }
         binding.cbMonitorTouch.setOnClickListener { this.onClick(it) }
@@ -80,6 +114,15 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 ).show()
             }
         }
+
+        Shizuku.addRequestPermissionResultListener(shizukuResultListener)
+        Shizuku.addBinderReceivedListener(shizukuBinderListener)
+    }
+
+    override fun onDestroy() {
+        Shizuku.removeRequestPermissionResultListener(shizukuResultListener)
+        Shizuku.removeBinderReceivedListener(shizukuBinderListener)
+        super.onDestroy()
     }
 
     /**
@@ -105,8 +148,34 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         binding.btnMonitorStatusOff.isEnabled = enabled && prefs.serviceSwitch
     }
 
+    /**
+     * 刷新「Shizuku / Root」授权状态。Root 检测要起 su 进程，故在 IO 线程执行。
+     * 两者皆无时，两个提权按钮禁用（此时仍需手动去设置页开启无障碍）。
+     */
+    private fun refreshPrivilegeStatus() {
+        lifecycleScope.launch(Dispatchers.IO) {
+            val mode = PrivilegedShell.currentMode()
+            val (textId, showGrant) = when (mode) {
+                PrivilegedShell.Mode.ROOT -> R.string.tv_privilege_root to false
+                PrivilegedShell.Mode.SHIZUKU -> R.string.tv_privilege_shizuku to false
+                PrivilegedShell.Mode.NONE ->
+                    if (PrivilegedShell.shizukuBinderAlive())
+                        R.string.tv_privilege_shizuku_need_grant to true
+                    else
+                        R.string.tv_privilege_none to false
+            }
+            withContext(Dispatchers.Main) {
+                binding.tvPrivilegeStatus.setText(textId)
+                binding.btnPrivilegeGrant.visibility = if (showGrant) View.VISIBLE else View.GONE
+                binding.btnEnableAccessibilityAuto.isEnabled = mode != PrivilegedShell.Mode.NONE
+                binding.btnKeepAlive.isEnabled = mode != PrivilegedShell.Mode.NONE
+            }
+        }
+    }
+
     fun updateUI() {
         refreshAccessibilityStatus()
+        refreshPrivilegeStatus()
         binding.etInterval.text =
             Editable.Factory.getInstance().newEditable(prefs.interval.toString())
         binding.etDelay.text =
@@ -144,12 +213,67 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
             }
 
-            binding.btnMonitorStatusOn -> {
-                if (prefs.permissionOverlay != 1) {
-                    dialog =
-                        PermissionHelper.requestOverlayPermission(this, PERMISSION_REQUEST_OVERLAY)
-                    return
+            // 有 Shizuku/Root 时直接写系统设置开启无障碍，免去手动进设置页
+            binding.btnEnableAccessibilityAuto -> {
+                lifecycleScope.launch {
+                    // currentMode() 会探测 su，必须在 IO 线程，不能阻塞 UI
+                    if (PrivilegedShell.currentMode() == PrivilegedShell.Mode.NONE) {
+                        Toast.makeText(
+                            this@MainActivity, R.string.toast_no_privilege, Toast.LENGTH_SHORT
+                        ).show()
+                        return@launch
+                    }
+                    val ok = PrivilegedShell.enableAccessibility(applicationContext)
+                    Toast.makeText(
+                        this@MainActivity,
+                        if (ok) R.string.toast_accessibility_enabled_ok
+                        else R.string.toast_accessibility_enabled_fail,
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    refreshAccessibilityStatus()
                 }
+            }
+
+            // 加入 Doze 白名单 + 放行后台运行；依赖前台服务常驻，不创建悬浮窗
+            binding.btnKeepAlive -> {
+                lifecycleScope.launch {
+                    if (PrivilegedShell.currentMode() == PrivilegedShell.Mode.NONE) {
+                        Toast.makeText(
+                            this@MainActivity, R.string.toast_no_privilege, Toast.LENGTH_SHORT
+                        ).show()
+                        return@launch
+                    }
+                    val r = PrivilegedShell.grantKeepAlive(applicationContext)
+                    Toast.makeText(
+                        this@MainActivity,
+                        if (r.success) R.string.toast_keep_alive_ok
+                        else R.string.toast_keep_alive_fail,
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+
+            binding.btnPrivilegeGrant -> {
+                when {
+                    PrivilegedShell.shizukuReady() -> refreshPrivilegeStatus()
+                    PrivilegedShell.shizukuBinderAlive() -> Shizuku.requestPermission(
+                        REQUEST_SHIZUKU_PERMISSION
+                    )
+                    else -> Toast.makeText(
+                        this, R.string.tv_privilege_shizuku_missing, Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+
+            binding.ibPrivilegeHelp -> {
+                AlertDialog.Builder(this)
+                    .setTitle(R.string.dialog_privilege_title)
+                    .setMessage(R.string.dialog_privilege_message)
+                    .setPositiveButton(R.string.btn_confirm) { d, _ -> d.dismiss() }
+                    .show()
+            }
+
+            binding.btnMonitorStatusOn -> {
                 prefs.serviceSwitch = true
                 updateUI()
                 sendBroadcast(Intent(EInkAccessibilityService.Companion.ACTION_CONFIG_CHANGE))
@@ -271,12 +395,12 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     }
 
     /**
-     * 进入前台时检查必要权限：忽略电池优化、悬浮窗。
-     * 每项权限若未授权且未处于“已提示过”状态，则弹引导；悬浮窗缺失会临时关闭服务开关。
+     * 进入前台时检查必要权限：忽略电池优化。
+     * （悬浮窗权限已废弃：触摸计数改由无障碍事件完成，不再创建透明悬浮窗）
      * 用 prefs 中的权限标记位避免每次 onResume 重复弹窗。
      */
     private fun requestRequiredPermissions() {
-        XLog.d("requestRequiredPermissions: 电池优化=${prefs.permissionIgnoringBatteryOptimizations}, 悬浮窗=${prefs.permissionOverlay}")
+        XLog.d("requestRequiredPermissions: 电池优化=${prefs.permissionIgnoringBatteryOptimizations}")
 
         // 检查忽略电池优化权限
         if (!PermissionHelper.hasIgnoringBatteryOptimizationsPermission(this)) {
@@ -289,30 +413,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         } else {
             prefs.permissionIgnoringBatteryOptimizations = 1
         }
-
-        //申请悬浮窗权限
-        if (!PermissionHelper.hasOverlayPermission(this)) {
-            if (prefs.permissionOverlay != 0) {
-                XLog.d("requestRequiredPermissions: 申请悬浮窗权限，并临时关闭服务")
-                dialog = PermissionHelper.requestOverlayPermission(this, PERMISSION_REQUEST_OVERLAY)
-                prefs.permissionOverlay = 0
-                prefs.serviceSwitch = false
-                sendBroadcast(Intent(EInkAccessibilityService.Companion.ACTION_CONFIG_CHANGE))
-                return
-            }
-        } else {
-            prefs.permissionOverlay = 1
-        }
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == PERMISSION_REQUEST_OVERLAY) {
-            if (!PermissionHelper.hasOverlayPermission(this)) {
-                Toast.makeText(this, R.string.request_permission_overlay_error, Toast.LENGTH_SHORT)
-                    .show()
-            }
-        }
+        // 悬浮窗权限已不再需要：触摸计数改由无障碍事件完成，不再创建 1x1 透明悬浮窗
     }
 
 }
