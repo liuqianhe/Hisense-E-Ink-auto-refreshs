@@ -22,9 +22,16 @@ import java.util.concurrent.TimeUnit
  * - grantKeepAlive()：把本应用加入 Doze 白名单并放行后台运行限制，
  *   配合已有的前台服务做保活，全程不创建任何悬浮窗。
  *
- * 优先级：Root > Shizuku（Root 更稳，Shizuku 更通用）。
+ * 优先级由「授权方案」决定：auto=Root 优先、无则回落 Shizuku；也可强制只用 Root 或只用 Shizuku。
  */
 object PrivilegedShell {
+
+    /** 授权方案：自动（Root 优先，回落 Shizuku） */
+    const val SCHEME_AUTO = "auto"
+    /** 授权方案：只用 Root */
+    const val SCHEME_ROOT = "root"
+    /** 授权方案：只用 Shizuku */
+    const val SCHEME_SHIZUKU = "shizuku"
 
     enum class Mode { NONE, SHIZUKU, ROOT }
 
@@ -35,6 +42,16 @@ object PrivilegedShell {
     }
 
     private const val TIMEOUT_SEC = 15L
+
+    @Volatile
+    private var preferredScheme: String = SCHEME_AUTO
+
+    /** 设置授权方案（auto / root / shizuku），由 MainActivity 从偏好读取后注入 */
+    fun setScheme(scheme: String) {
+        preferredScheme = scheme
+    }
+
+    fun getScheme(): String = preferredScheme
 
     /**
      * su 的常见位置。应用进程的 PATH 通常不含 /sbin，直接 exec("su") 会找不到，
@@ -52,8 +69,9 @@ object PrivilegedShell {
     @Volatile
     private var suPath: String? = null
 
+    /** Root 是否已被本应用拿到授权（缓存值，只有 requestRootGrant() 会更新它） */
     @Volatile
-    private var rootProbed = false
+    private var rootGranted = false
 
     /** Shizuku 的 binder 是否已就绪（意味着设备上安装并运行了 Shizuku） */
     fun shizukuBinderAlive(): Boolean {
@@ -73,38 +91,49 @@ object PrivilegedShell {
         }
     }
 
-    /** 探测可用的 su（结果缓存，避免反复触发 Magisk 授权弹窗） */
-    private fun findSu(): String? {
-        suPath?.let { return it }
-        if (rootProbed) return null
+    /**
+     * 探测可用的 su。只在「授权 Root」按钮点击时调用（会触发 Magisk 授权弹窗），
+     * 平时的状态刷新只读 rootGranted 缓存，避免反复弹窗打扰。
+     */
+    fun requestRootGrant(): Boolean {
+        suPath = null
         for (candidate in SU_CANDIDATES) {
             try {
                 val p = Runtime.getRuntime().exec(arrayOf(candidate, "-c", "id"))
-                val finished = p.waitFor(5, TimeUnit.SECONDS)
+                val finished = p.waitFor(8, TimeUnit.SECONDS)
                 val out = p.inputStream.bufferedReader().readText()
                 val ok = finished && p.exitValue() == 0 && out.contains("uid=0")
-                XLog.d("PrivilegedShell: 探测 su [$candidate] -> $ok, 输出=${out.trim()}")
+                XLog.d("PrivilegedShell: 申请 Root 授权 [$candidate] -> $ok, 输出=${out.trim()}")
                 if (ok) {
                     suPath = candidate
-                    return candidate
+                    rootGranted = true
+                    return true
                 }
             } catch (e: Throwable) {
-                XLog.d("PrivilegedShell: 探测 su [$candidate] 异常: ${e.message}")
+                XLog.d("PrivilegedShell: 申请 Root 授权 [$candidate] 异常: ${e.message}")
             }
         }
-        rootProbed = true
-        return null
+        rootGranted = false
+        return false
     }
 
-    /** 设备是否已有 root 且本应用已被 su 放行 */
-    fun hasRoot(): Boolean = findSu() != null
+    /** Root 是否已被本应用授权（只读缓存，不触发 Magisk 弹窗） */
+    fun hasRoot(): Boolean = rootGranted
 
-    /** 当前可用的提权方式；Root 不可用且 Shizuku 未授权时返回 NONE */
+    /** 设备上是否存在 su 可执行文件（只查文件存在性，不执行、不弹窗），用于决定是否显示「授权 Root」按钮 */
+    fun rootBinaryExists(): Boolean =
+        SU_CANDIDATES.filter { it != "su" }.any { java.io.File(it).exists() }
+
+    /** 当前应使用的提权方式，遵循已设置的授权方案 */
     fun currentMode(): Mode {
-        return when {
-            hasRoot() -> Mode.ROOT
-            shizukuReady() -> Mode.SHIZUKU
-            else -> Mode.NONE
+        return when (preferredScheme) {
+            SCHEME_ROOT -> if (hasRoot()) Mode.ROOT else Mode.NONE
+            SCHEME_SHIZUKU -> if (shizukuReady()) Mode.SHIZUKU else Mode.NONE
+            else -> when {
+                hasRoot() -> Mode.ROOT
+                shizukuReady() -> Mode.SHIZUKU
+                else -> Mode.NONE
+            }
         }
     }
 
@@ -119,7 +148,7 @@ object PrivilegedShell {
     }
 
     private fun execRoot(cmd: String): Result {
-        val su = findSu() ?: "su"
+        val su = suPath ?: "su"
         return try {
             val p = Runtime.getRuntime().exec(arrayOf(su, "-c", cmd))
             val finished = p.waitFor(TIMEOUT_SEC, TimeUnit.SECONDS)

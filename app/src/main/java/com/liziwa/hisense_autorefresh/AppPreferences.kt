@@ -100,6 +100,14 @@ class AppPreferences private constructor(context: Context) {
         get() = prefs.getInt("permission_ignoring_battery_optimizations", -1)
         set(value) = prefs.edit { putInt("permission_ignoring_battery_optimizations", value).apply() }
 
+    /**
+     * 授权方案：auto=自动（Root 优先，回落 Shizuku）/ root=只用 Root / shizuku=只用 Shizuku。
+     * 决定「一键开启无障碍」「保活加白」走哪条提权通道。
+     */
+    var privilegeScheme: String
+        get() = prefs.getString("privilege_scheme", null) ?: "auto"
+        set(value) = prefs.edit { putString("privilege_scheme", value).apply() }
+
     /** 悬浮窗权限状态：1=已授权, 0=未授权/待申请, -1=初始未判断 */
     var permissionOverlay: Int
         get() = prefs.getInt("permission_overlay", -1)

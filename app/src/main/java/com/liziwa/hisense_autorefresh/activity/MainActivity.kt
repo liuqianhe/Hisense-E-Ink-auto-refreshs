@@ -78,11 +78,15 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         }
 
         prefs = AppPreferences.getInstance(applicationContext)
+        // 把持久化的授权方案注入 PrivilegedShell（auto / root / shizuku）
+        PrivilegedShell.setScheme(prefs.privilegeScheme)
 
         binding.btnToAccessibilitySettings.setOnClickListener { this.onClick(it) }
         binding.btnEnableAccessibilityAuto.setOnClickListener { this.onClick(it) }
         binding.btnKeepAlive.setOnClickListener { this.onClick(it) }
-        binding.btnPrivilegeGrant.setOnClickListener { this.onClick(it) }
+        binding.btnGrantShizuku.setOnClickListener { this.onClick(it) }
+        binding.btnGrantRoot.setOnClickListener { this.onClick(it) }
+        binding.btnScheme.setOnClickListener { this.onClick(it) }
         binding.ibPrivilegeHelp.setOnClickListener { this.onClick(it) }
         binding.btnMonitorStatusOn.setOnClickListener { this.onClick(it) }
         binding.btnMonitorStatusOff.setOnClickListener { this.onClick(it) }
@@ -149,24 +153,45 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
     }
 
     /**
-     * 刷新「Shizuku / Root」授权状态。Root 检测要起 su 进程，故在 IO 线程执行。
-     * 两者皆无时，两个提权按钮禁用（此时仍需手动去设置页开启无障碍）。
+     * 刷新「Shizuku / Root」授权状态（遵循已选授权方案）。
+     * 只读缓存判断 Root（rootGranted），不会触发 Magisk 弹窗；
+     * Root 授权状态由「授权 Root」按钮点击时的 requestRootGrant() 更新。
      */
     private fun refreshPrivilegeStatus() {
         lifecycleScope.launch(Dispatchers.IO) {
             val mode = PrivilegedShell.currentMode()
-            val (textId, showGrant) = when (mode) {
-                PrivilegedShell.Mode.ROOT -> R.string.tv_privilege_root to false
-                PrivilegedShell.Mode.SHIZUKU -> R.string.tv_privilege_shizuku to false
-                PrivilegedShell.Mode.NONE ->
-                    if (PrivilegedShell.shizukuBinderAlive())
-                        R.string.tv_privilege_shizuku_need_grant to true
-                    else
-                        R.string.tv_privilege_none to false
+            val scheme = PrivilegedShell.getScheme()
+            val textId: Int = when (mode) {
+                PrivilegedShell.Mode.ROOT -> R.string.tv_privilege_root
+                PrivilegedShell.Mode.SHIZUKU -> R.string.tv_privilege_shizuku
+                PrivilegedShell.Mode.NONE -> when (scheme) {
+                    PrivilegedShell.SCHEME_ROOT ->
+                        if (PrivilegedShell.rootBinaryExists()) R.string.tv_privilege_root_need_grant
+                        else R.string.tv_privilege_none
+                    PrivilegedShell.SCHEME_SHIZUKU ->
+                        if (PrivilegedShell.shizukuBinderAlive()) R.string.tv_privilege_shizuku_need_grant
+                        else R.string.tv_privilege_shizuku_missing
+                    else ->
+                        if (PrivilegedShell.shizukuBinderAlive() || PrivilegedShell.rootBinaryExists())
+                            R.string.tv_privilege_shizuku_need_grant
+                        else R.string.tv_privilege_none
+                }
             }
+            // 两个独立授权按钮：仅在「可申请且尚未授权」时显示，避免占空间
+            val showShizukuGrant = PrivilegedShell.shizukuBinderAlive() && !PrivilegedShell.shizukuReady()
+            val showRootGrant = !PrivilegedShell.hasRoot() && PrivilegedShell.rootBinaryExists()
+            val schemeNames = mapOf(
+                PrivilegedShell.SCHEME_AUTO to getString(R.string.scheme_auto),
+                PrivilegedShell.SCHEME_ROOT to getString(R.string.scheme_root),
+                PrivilegedShell.SCHEME_SHIZUKU to getString(R.string.scheme_shizuku)
+            )
             withContext(Dispatchers.Main) {
                 binding.tvPrivilegeStatus.setText(textId)
-                binding.btnPrivilegeGrant.visibility = if (showGrant) View.VISIBLE else View.GONE
+                binding.btnGrantShizuku.visibility = if (showShizukuGrant) View.VISIBLE else View.GONE
+                binding.btnGrantRoot.visibility = if (showRootGrant) View.VISIBLE else View.GONE
+                binding.rowGrants.visibility =
+                    if (showShizukuGrant || showRootGrant) View.VISIBLE else View.GONE
+                binding.btnScheme.text = getString(R.string.btn_scheme_fmt, schemeNames[scheme])
                 binding.btnEnableAccessibilityAuto.isEnabled = mode != PrivilegedShell.Mode.NONE
                 binding.btnKeepAlive.isEnabled = mode != PrivilegedShell.Mode.NONE
             }
@@ -253,7 +278,8 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 }
             }
 
-            binding.btnPrivilegeGrant -> {
+            // 单独申请 Shizuku 授权（弹 Shizuku 的授权对话框）
+            binding.btnGrantShizuku -> {
                 when {
                     PrivilegedShell.shizukuReady() -> refreshPrivilegeStatus()
                     PrivilegedShell.shizukuBinderAlive() -> Shizuku.requestPermission(
@@ -263,6 +289,48 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                         this, R.string.tv_privilege_shizuku_missing, Toast.LENGTH_SHORT
                     ).show()
                 }
+            }
+
+            // 单独申请 Root 授权：真正起 su 进程，触发 Magisk 授权弹窗（IO 线程，可能阻塞数秒）
+            binding.btnGrantRoot -> {
+                lifecycleScope.launch {
+                    if (!PrivilegedShell.rootBinaryExists()) {
+                        Toast.makeText(this@MainActivity, R.string.toast_root_no_binary, Toast.LENGTH_SHORT).show()
+                        return@launch
+                    }
+                    val ok = withContext(Dispatchers.IO) { PrivilegedShell.requestRootGrant() }
+                    Toast.makeText(
+                        this@MainActivity,
+                        if (ok) R.string.toast_root_granted else R.string.toast_root_denied,
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    refreshPrivilegeStatus()
+                }
+            }
+
+            // 授权方案：自动（Root 优先）/ 只用 Root / 只用 Shizuku
+            binding.btnScheme -> {
+                val schemes = arrayOf(
+                    getString(R.string.scheme_auto),
+                    getString(R.string.scheme_root),
+                    getString(R.string.scheme_shizuku)
+                )
+                val values = arrayOf(
+                    PrivilegedShell.SCHEME_AUTO,
+                    PrivilegedShell.SCHEME_ROOT,
+                    PrivilegedShell.SCHEME_SHIZUKU
+                )
+                val checked = values.indexOf(prefs.privilegeScheme).coerceAtLeast(0)
+                AlertDialog.Builder(this)
+                    .setTitle(R.string.dialog_scheme_title)
+                    .setSingleChoiceItems(schemes, checked) { d, which ->
+                        prefs.privilegeScheme = values[which]
+                        PrivilegedShell.setScheme(values[which])
+                        d.dismiss()
+                        refreshPrivilegeStatus()
+                    }
+                    .setNegativeButton(R.string.btn_cancel) { d, _ -> d.dismiss() }
+                    .show()
             }
 
             binding.ibPrivilegeHelp -> {

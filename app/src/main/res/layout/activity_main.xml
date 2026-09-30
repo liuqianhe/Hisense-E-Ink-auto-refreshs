@@ -138,13 +138,43 @@
                 app:layout_constraintTop_toTopOf="@id/tv_privilege" />
 
             <Button
-                android:id="@+id/btn_privilege_grant"
+                android:id="@+id/btn_scheme"
                 style="@style/defButtonStyle"
                 android:layout_marginRight="5dp"
-                android:text="@string/btn_privilege_grant"
+                android:text="@string/btn_scheme"
                 app:layout_constraintBottom_toBottomOf="@id/tv_privilege"
                 app:layout_constraintRight_toLeftOf="@id/ib_privilege_help"
                 app:layout_constraintTop_toTopOf="@id/tv_privilege" />
+
+            <!-- 独立授权入口：Shizuku 与 Root 分开申请；均不可申请时整行隐藏 -->
+            <LinearLayout
+                android:id="@+id/row_grants"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space"
+                android:orientation="horizontal"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintRight_toRightOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/tv_privilege">
+
+                <Button
+                    android:id="@+id/btn_grant_shizuku"
+                    style="@style/defButtonStyle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginRight="5dp"
+                    android:text="@string/btn_grant_shizuku" />
+
+                <Button
+                    android:id="@+id/btn_grant_root"
+                    style="@style/defButtonStyle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginLeft="5dp"
+                    android:text="@string/btn_grant_root" />
+            </LinearLayout>
 
             <Button
                 android:id="@+id/btn_enable_accessibility_auto"
@@ -155,7 +185,7 @@
                 android:text="@string/btn_enable_accessibility_auto"
                 app:layout_constraintLeft_toLeftOf="parent"
                 app:layout_constraintRight_toLeftOf="@id/btn_keep_alive"
-                app:layout_constraintTop_toBottomOf="@id/tv_privilege" />
+                app:layout_constraintTop_toBottomOf="@id/row_grants" />
 
             <Button
                 android:id="@+id/btn_keep_alive"

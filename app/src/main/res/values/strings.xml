@@ -70,18 +70,30 @@
     <string name="tv_privilege_shizuku">Shizuku 已授权</string>
     <string name="tv_privilege_shizuku_need_grant">Shizuku 未授权（点授权）</string>
     <string name="tv_privilege_shizuku_missing">未安装 Shizuku</string>
+    <string name="tv_privilege_root_need_grant">Root 未授权（点授权）</string>
     <string name="btn_privilege_grant">授权</string>
+    <string name="btn_grant_shizuku">授权 Shizuku</string>
+    <string name="btn_grant_root">授权 Root</string>
+    <string name="btn_scheme">方案：自动</string>
+    <string name="btn_scheme_fmt">方案：%s</string>
+    <string name="scheme_auto">自动</string>
+    <string name="scheme_root">Root</string>
+    <string name="scheme_shizuku">Shizuku</string>
+    <string name="dialog_scheme_title">选择授权方案</string>
+    <string name="toast_root_granted">Root 授权成功</string>
+    <string name="toast_root_denied">Root 授权失败（设备未 Root 或已拒绝）</string>
+    <string name="toast_root_no_binary">未检测到 su，设备可能未 Root</string>
     <string name="btn_enable_accessibility_auto">一键开启无障碍</string>
     <string name="btn_keep_alive">加入保活白名单</string>
     <string name="btn_relax_hidden_api">解除隐藏API限制</string>
     <string name="toast_accessibility_enabled_ok">无障碍已开启</string>
     <string name="toast_accessibility_enabled_fail">开启失败，请改用「去设置」手动开启</string>
-    <string name="toast_no_privilege">未检测到 Shizuku 或 Root，请先安装/授权 Shizuku</string>
+    <string name="toast_no_privilege">当前方案下无可用授权，请先授权或切换方案</string>
     <string name="toast_keep_alive_ok">已加入保活白名单</string>
     <string name="toast_keep_alive_fail">加白失败，可能该命令不被系统支持</string>
     <string name="toast_shizuku_granted">Shizuku 授权成功</string>
     <string name="toast_shizuku_denied">Shizuku 授权被拒绝</string>
     <string name="dialog_privilege_title">为什么需要 Shizuku / Root</string>
-    <string name="dialog_privilege_message">开启无障碍服务必须修改系统安全设置（enabled_accessibility_services）。\n\n有 Shizuku（以 shell 身份运行）或 Root 时，本应用可直接写入该设置，你不必再去「设置 → 无障碍」手动开关；同时可把本应用加入 Doze 白名单用于后台保活。\n\n两者都没有时，仍需手动去设置页开启无障碍。整个过程不会创建任何悬浮窗/悬浮球。</string>
+    <string name="dialog_privilege_message">开启无障碍服务必须修改系统安全设置（enabled_accessibility_services）。\n\n有 Shizuku（以 shell 身份运行）或 Root 时，本应用可直接写入该设置，你不必再去「设置 → 无障碍」手动开关；同时可把本应用加入 Doze 白名单用于后台保活。\n\n两者都没有时，仍需手动去设置页开启无障碍。整个过程不会创建任何悬浮窗/悬浮球。\n\n「方案」可选择自动（Root 优先）、只用 Root 或只用 Shizuku。</string>
 
 </resources>
