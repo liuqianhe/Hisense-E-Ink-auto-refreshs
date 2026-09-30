@@ -84,6 +84,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         binding.btnToAccessibilitySettings.setOnClickListener { this.onClick(it) }
         binding.btnEnableAccessibilityAuto.setOnClickListener { this.onClick(it) }
         binding.btnKeepAlive.setOnClickListener { this.onClick(it) }
+        binding.btnRelaxHiddenApi.setOnClickListener { this.onClick(it) }
         binding.btnGrantShizuku.setOnClickListener { this.onClick(it) }
         binding.btnGrantRoot.setOnClickListener { this.onClick(it) }
         binding.btnScheme.setOnClickListener { this.onClick(it) }
@@ -194,6 +195,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 binding.btnScheme.text = getString(R.string.btn_scheme_fmt, schemeNames[scheme])
                 binding.btnEnableAccessibilityAuto.isEnabled = mode != PrivilegedShell.Mode.NONE
                 binding.btnKeepAlive.isEnabled = mode != PrivilegedShell.Mode.NONE
+                binding.btnRelaxHiddenApi.isEnabled = mode != PrivilegedShell.Mode.NONE
             }
         }
     }
@@ -273,6 +275,26 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                         this@MainActivity,
                         if (r.success) R.string.toast_keep_alive_ok
                         else R.string.toast_keep_alive_fail,
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+
+            // 解除隐藏 API 限制：等价于手动 `adb shell settings put global hidden_api_policy 0`，
+            // 有 Shizuku/Root 时直接写入，免去手动 adb（刷新反射调用需要）
+            binding.btnRelaxHiddenApi -> {
+                lifecycleScope.launch {
+                    if (PrivilegedShell.currentMode() == PrivilegedShell.Mode.NONE) {
+                        Toast.makeText(
+                            this@MainActivity, R.string.toast_no_privilege, Toast.LENGTH_SHORT
+                        ).show()
+                        return@launch
+                    }
+                    val r = PrivilegedShell.relaxHiddenApiPolicy()
+                    Toast.makeText(
+                        this@MainActivity,
+                        if (r.success) R.string.toast_relax_hidden_api_ok
+                        else R.string.toast_relax_hidden_api_fail,
                         Toast.LENGTH_SHORT
                     ).show()
                 }

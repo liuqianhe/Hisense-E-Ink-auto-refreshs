@@ -38,6 +38,8 @@
     <string name="loading">加载中…</string>
     <string name="btn_save">保存</string>
     <string name="btn_back">返回</string>
+    <string name="hint_search_app">搜索应用名称或包名</string>
+    <string name="cb_include_system">包括系统应用</string>
     <string name="btn_cancel">取消</string>
     <string name="btn_exit">退出</string>
     <string name="btn_test">测试刷新</string>
@@ -91,6 +93,8 @@
     <string name="toast_no_privilege">当前方案下无可用授权，请先授权或切换方案</string>
     <string name="toast_keep_alive_ok">已加入保活白名单</string>
     <string name="toast_keep_alive_fail">加白失败，可能该命令不被系统支持</string>
+    <string name="toast_relax_hidden_api_ok">已解除隐藏API限制（值=0）</string>
+    <string name="toast_relax_hidden_api_fail">解除失败，请改用电脑 adb 手动设置</string>
     <string name="toast_shizuku_granted">Shizuku 授权成功</string>
     <string name="toast_shizuku_denied">Shizuku 授权被拒绝</string>
     <string name="dialog_privilege_title">为什么需要 Shizuku / Root</string>

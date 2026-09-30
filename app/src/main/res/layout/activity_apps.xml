@@ -22,6 +22,38 @@
                 android:text="@string/title_activity_apps" />
         </LinearLayout>
 
+        <!-- 搜索栏：应用名称 / 包名 过滤 + 是否包括系统应用 -->
+        <LinearLayout
+            android:id="@+id/ll_search"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingLeft="@dimen/area_margin"
+            android:paddingRight="@dimen/area_margin"
+            android:gravity="center_vertical"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/cl_custom_title">
+
+            <EditText
+                android:id="@+id/et_search"
+                style="@style/defEditStyle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="10dp"
+                android:inputType="text"
+                android:hint="@string/hint_search_app"
+                android:imeOptions="actionDone" />
+
+            <CheckBox
+                android:id="@+id/cb_include_system"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/cb_include_system"
+                android:checked="true" />
+        </LinearLayout>
+
         <Button
             android:id="@+id/btn_save"
             style="@style/defButtonStyle"
@@ -56,7 +88,7 @@
             app:layout_constraintBottom_toTopOf="@id/btn_save"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/cl_custom_title" />
+            app:layout_constraintTop_toBottomOf="@id/ll_search" />
 
         <TextView
             android:id="@+id/tv_loading"

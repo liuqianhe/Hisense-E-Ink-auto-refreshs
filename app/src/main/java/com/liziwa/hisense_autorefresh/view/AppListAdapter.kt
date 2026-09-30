@@ -83,7 +83,8 @@ class AppListAdapter(
         var isChecked: Boolean = false,
         var interval: Int = AppPreferences.DEFAULT_APP_INTERVAL,
         var delayTime: Int = AppPreferences.DEFAULT_APP_DELAY,
-        val showConfig: Boolean = true
+        val showConfig: Boolean = true,
+        val isSystem: Boolean = false
     ) {
         /** 列表项底部展示的当前配置数值，如「10 : 2s」，前缀由 string 资源提供 */
         val configText: String

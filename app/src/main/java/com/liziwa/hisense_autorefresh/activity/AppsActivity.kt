@@ -42,8 +42,16 @@ import kotlin.coroutines.CoroutineContext
 class AppsActivity : AppCompatActivity(), View.OnClickListener, CoroutineScope {
 
     private lateinit var binding: ActivityAppsBinding
+    /** 当前显示的列表（适配器直接持有此引用），由 applyFilter() 按条件从 allApps 筛选填充 */
     private var appItems = mutableListOf<AppListAdapter.ListItem>()
+    /** 主数据列表：所有已加载应用（含选中态与独立配置），是保存时的唯一数据源 */
+    private var allApps = mutableListOf<AppListAdapter.ListItem>()
     private lateinit var prefs: AppPreferences
+
+    /** 搜索关键字（按应用名称或包名匹配） */
+    private var searchQuery: String = ""
+    /** 是否包括系统应用（默认 true，与改动前行为一致：显示所有含启动图标的已安装应用） */
+    private var includeSystemApps: Boolean = true
 
     companion object {
         private const val MSG_UPDATE_APP_LIST = 101
@@ -76,6 +84,23 @@ class AppsActivity : AppCompatActivity(), View.OnClickListener, CoroutineScope {
         binding.btnSave.setOnClickListener { this.onClick(it) }
         binding.btnBack.setOnClickListener { this.onClick(it) }
 
+        // 搜索框：输入即实时过滤（按应用名称或包名）
+        binding.etSearch.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                searchQuery = s?.toString() ?: ""
+                applyFilter()
+            }
+            override fun afterTextChanged(s: android.text.Editable?) {}
+        })
+
+        // “包括系统应用”开关：默认勾选（与改动前一致），取消则隐藏系统应用
+        binding.cbIncludeSystem.isChecked = includeSystemApps
+        binding.cbIncludeSystem.setOnCheckedChangeListener { _, checked ->
+            includeSystemApps = checked
+            applyFilter()
+        }
+
         binding.rvList.layoutManager = LinearLayoutManager(this)
         binding.rvList.adapter = adapter
         getAllApps()
@@ -91,12 +116,13 @@ class AppsActivity : AppCompatActivity(), View.OnClickListener, CoroutineScope {
                 prefs.targetPackageName?.split(",")?.filter { it.isNotEmpty() }
             }
             XLog.d("getAllApps: mode=$mode, 已选=${choiceApps?.size}个")
+            allApps.clear()
             Utils.getLauncherApps(applicationContext)
                 .filter { !packageName.equals(it.packageName) } // 排除本应用，避免自我监控
                 .forEach { it ->
                     // 读取该应用已保存的独立刷新配置（未配置则用默认值）
                     val cfg = prefs.getAppRefreshConfig(it.packageName)
-                    appItems.add(
+                    allApps.add(
                         AppListAdapter.ListItem(
                             it.name,
                             it.packageName,
@@ -104,13 +130,35 @@ class AppsActivity : AppCompatActivity(), View.OnClickListener, CoroutineScope {
                             choiceApps?.contains(it.packageName) ?: false,
                             cfg.first,
                             cfg.second,
-                            mode == MODE_MONITOR // 仅监控模式显示独立配置入口
+                            mode == MODE_MONITOR, // 仅监控模式显示独立配置入口
+                            it.isSystem
                         )
                     )
                 }
-            XLog.d("getAllApps: 加载完成，共 ${appItems.size} 个应用")
+            XLog.d("getAllApps: 加载完成，共 ${allApps.size} 个应用")
+            applyFilter()
             myHandler.sendEmptyMessage(MSG_UPDATE_APP_LIST)
         }
+    }
+
+    /**
+     * 按「搜索关键字」与「是否包括系统应用」过滤主列表，结果写入显示列表 appItems。
+     * 已勾选的应用始终保留可见（无论是否被搜索/系统开关过滤），避免误保存时丢配置。
+     * 结果按应用名排序，作为稳定的默认排序。
+     */
+    private fun applyFilter() {
+        val q = searchQuery.trim().lowercase()
+        val filtered = allApps.filter { item ->
+            val keepChecked = item.isChecked
+            val matchSystem = includeSystemApps || !item.isSystem
+            val matchQuery = q.isEmpty() ||
+                item.title.lowercase().contains(q) ||
+                item.pkg.lowercase().contains(q)
+            keepChecked || (matchSystem && matchQuery)
+        }.sortedBy { it.title.lowercase() }
+        appItems.clear()
+        appItems.addAll(filtered)
+        adapter.notifyDataSetChanged()
     }
 
     private val adapter: AppListAdapter =
@@ -201,9 +249,9 @@ class AppsActivity : AppCompatActivity(), View.OnClickListener, CoroutineScope {
     override fun onClick(p0: View) {
         when (p0) {
             binding.btnSave -> {
-                // 汇总所有选中包名，逗号分隔
+                // 汇总所有选中包名，逗号分隔（基于主列表 allApps，确保被搜索/过滤掉的已选项不丢失）
                 val stringBuilder = StringBuilder()
-                appItems.forEach {
+                allApps.forEach {
                     if (it.isChecked) {
                         stringBuilder.append(it.pkg).append(",")
                     }
@@ -217,7 +265,7 @@ class AppsActivity : AppCompatActivity(), View.OnClickListener, CoroutineScope {
                     prefs.monitorGlobal = TextUtils.isEmpty(stringBuilder.toString())
                     // 写入各选中应用的独立刷新配置（pkg:interval:delay）
                     val configBuilder = StringBuilder()
-                    appItems.forEach { app ->
+                    allApps.forEach { app ->
                         if (app.isChecked) {
                             configBuilder.append(app.pkg).append(":")
                                 .append(app.interval).append(":").append(app.delayTime).append(",")

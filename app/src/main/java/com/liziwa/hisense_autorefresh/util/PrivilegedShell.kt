@@ -247,4 +247,23 @@ object PrivilegedShell {
         val r = exec("dumpsys deviceidle whitelist")
         r.out.contains(context.packageName)
     }
+
+    /**
+     * 解除隐藏 API 限制（等价于手动执行 `adb shell settings put global hidden_api_policy 0`）。
+     *
+     * 海信等 ROM 对 non-SDK 接口（本项目通过反射调用 com.hmct.epd.EpdManager.forceClear 强制刷新）
+     * 有灰名单限制，不设大会导致刷新反射调用被系统拦截。原方案需手动 adb 设置一次，
+     * 现在有了 Shizuku（shell 身份，与 adb shell 等价）或 Root，可直接写入，免去手动 adb。
+     *
+     * 写入后读取校验，确认值确实变为 0 才算成功。
+     */
+    suspend fun relaxHiddenApiPolicy(): Result = withContext(Dispatchers.IO) {
+        if (currentMode() == Mode.NONE) return@withContext Result.fail("无可用提权方式（需 Shizuku 或 Root）")
+        val put = exec("settings put global hidden_api_policy 0")
+        val get = exec("settings get global hidden_api_policy")
+        val current = get.out.trim()
+        val ok = put.success && current == "0"
+        XLog.i("PrivilegedShell: 解除隐藏API限制 -> put=${put.success}, 当前值=$current, ok=$ok")
+        if (ok) put.copy(success = true) else Result.fail("设置失败（put=${put.success}, 当前值=$current）")
+    }
 }

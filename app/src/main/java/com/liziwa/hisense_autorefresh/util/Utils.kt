@@ -6,6 +6,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Context.ACCESSIBILITY_SERVICE
 import android.content.Intent
+import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
 import android.graphics.drawable.Drawable
@@ -202,7 +203,8 @@ object Utils {
             AppInfo(
                 packageName = appInfo.packageName,
                 name = resolveInfo.loadLabel(pm).toString(),
-                icon = resolveInfo.loadIcon(pm)
+                icon = resolveInfo.loadIcon(pm),
+                isSystem = (appInfo.flags and ApplicationInfo.FLAG_SYSTEM) != 0
             )
         } catch (e: Exception) {
             null // 忽略无效条目
@@ -237,6 +239,7 @@ object Utils {
     data class AppInfo(
         val packageName: String,
         val name: String,
-        val icon: Drawable
+        val icon: Drawable,
+        val isSystem: Boolean = false
     )
 }
