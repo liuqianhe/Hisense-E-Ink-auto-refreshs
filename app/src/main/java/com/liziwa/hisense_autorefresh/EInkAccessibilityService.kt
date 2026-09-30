@@ -73,6 +73,15 @@ class EInkAccessibilityService : AccessibilityService(), View.OnTouchListener {
     companion object {
         const val ACTION_CONFIG_CHANGE = "com.liziwa.hisense_autorefresh.ACTION_CONFIG_CHANGE"
 
+        /**
+         * 服务是否已被系统绑定（onServiceConnected/onUnbind 维护）。
+         * 这是判断"无障碍是否真的在工作"最直接的证据：只要系统 bind 过我们，就一定是设置里开了的。
+         * 无障碍服务与 App 同进程，故静态标志可直接读取。
+         */
+        @Volatile
+        @JvmStatic
+        var isRunning = false
+
         private const val MSG_REFRESH_DISPLAY = 101
         private const val MSG_DETECT_READING = 102
         private const val MSG_PERIODIC_REFRESH = 103
@@ -242,6 +251,8 @@ class EInkAccessibilityService : AccessibilityService(), View.OnTouchListener {
         this.serviceInfo = info
         startForegroundNotification()
         serviceConn = true
+        isRunning = true
+        XLog.i("无障碍服务已连接，isRunning=true")
     }
 
     /**
@@ -580,6 +591,7 @@ class EInkAccessibilityService : AccessibilityService(), View.OnTouchListener {
     override fun onUnbind(intent: Intent?): Boolean {
         XLog.d("无障碍服务断开连接")
         serviceConn = false
+        isRunning = false
         myHandler.removeCallbacksAndMessages(null)
         return super.onUnbind(intent)
     }
@@ -587,6 +599,7 @@ class EInkAccessibilityService : AccessibilityService(), View.OnTouchListener {
     override fun onDestroy() {
         super.onDestroy()
         XLog.d("无障碍服务被销毁")
+        isRunning = false
         myHandler.removeCallbacksAndMessages(null)
         deleteTouchCapture()
         unregisterReceiver(myReceiver)

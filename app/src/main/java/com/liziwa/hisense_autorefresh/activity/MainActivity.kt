@@ -82,26 +82,31 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         }
     }
 
+    /**
+     * 只刷新「无障碍服务状态」相关 UI 并同步 prefs.serviceState（供开机自启判断）。
+     * 单独抽出来是为了延迟复查时不覆盖用户正在编辑的输入框内容。
+     */
+    private fun refreshAccessibilityStatus() {
+        val enabled = Utils.isAccessibilityServiceEnabled(applicationContext)
+        prefs.serviceState = enabled
+        binding.tvAccessibilityStatus.text = if (enabled) {
+            getString(R.string.tv_status_active)
+        } else {
+            getString(R.string.tv_status_stop)
+        }
+        binding.tvMonitor.isEnabled = enabled
+        binding.tvMonitorStatus.isEnabled = enabled
+        binding.tvMonitorStatus.text = if (enabled && prefs.serviceSwitch) {
+            getString(R.string.tv_status_active)
+        } else {
+            getString(R.string.tv_status_stop)
+        }
+        binding.btnMonitorStatusOn.isEnabled = enabled && !prefs.serviceSwitch
+        binding.btnMonitorStatusOff.isEnabled = enabled && prefs.serviceSwitch
+    }
+
     fun updateUI() {
-        val isAccessibilityServiceEnabled = Utils.isAccessibilityServiceEnabled(applicationContext)
-        binding.tvAccessibilityStatus.text = if (isAccessibilityServiceEnabled) {
-            prefs.serviceState = true
-            getString(R.string.tv_status_active)
-        } else {
-            prefs.serviceState = false
-            getString(R.string.tv_status_stop)
-        }
-        binding.tvMonitor.isEnabled = isAccessibilityServiceEnabled
-        binding.tvMonitorStatus.isEnabled = isAccessibilityServiceEnabled
-        binding.btnMonitorStatusOn.isEnabled = isAccessibilityServiceEnabled
-        binding.btnMonitorStatusOff.isEnabled = isAccessibilityServiceEnabled
-        binding.tvMonitorStatus.text = if (isAccessibilityServiceEnabled && prefs.serviceSwitch) {
-            getString(R.string.tv_status_active)
-        } else {
-            getString(R.string.tv_status_stop)
-        }
-        binding.btnMonitorStatusOn.isEnabled = isAccessibilityServiceEnabled && !prefs.serviceSwitch
-        binding.btnMonitorStatusOff.isEnabled = isAccessibilityServiceEnabled && prefs.serviceSwitch
+        refreshAccessibilityStatus()
         binding.etInterval.text =
             Editable.Factory.getInstance().newEditable(prefs.interval.toString())
         binding.etDelay.text =
@@ -244,6 +249,10 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         // 请求必要权限
         requestRequiredPermissions()
         updateUI()
+        // 开机后系统 bind 无障碍服务可能慢半拍，延迟再复查两次状态
+        // （只刷新状态区，不触碰输入框，避免覆盖用户编辑中的内容）
+        binding.root.postDelayed({ if (!isFinishing && !isDestroyed) refreshAccessibilityStatus() }, 800)
+        binding.root.postDelayed({ if (!isFinishing && !isDestroyed) refreshAccessibilityStatus() }, 3000)
     }
 
     override fun onPause() {

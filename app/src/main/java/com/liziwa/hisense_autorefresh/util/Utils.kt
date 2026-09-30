@@ -11,6 +11,7 @@ import android.content.pm.ResolveInfo
 import android.graphics.drawable.Drawable
 import android.os.Build
 import android.provider.Settings
+import android.text.TextUtils
 import android.view.accessibility.AccessibilityManager
 import androidx.annotation.RequiresApi
 import com.elvishew.xlog.XLog
@@ -21,13 +22,85 @@ import java.lang.reflect.InvocationTargetException
  * 通用工具类：无障碍服务状态检测、墨水屏强制刷新、已安装应用枚举。
  */
 object Utils {
-    /** 判断本应用的无障碍服务是否已在系统设置中开启 */
+
+    /**
+     * 判断本应用的无障碍服务是否已在系统设置中开启。
+     *
+     * 说明：不能只依赖 AccessibilityManager.getEnabledAccessibilityServiceList()。
+     * 在部分定制 ROM（如海信 A5Pro）上，开机后系统尚未真正 bind 服务时该列表返回空，
+     * 导致 App 误判为"未开启"，必须去设置里重新开关一次才恢复。
+     * 因此改为三重判定，任一命中即视为已开启：
+     *   1. 服务自身运行标志（onServiceConnected 置位，最可靠但需系统已 bind）
+     *   2. Settings.Secure 的 enabled_accessibility_services（直接反映开关状态，开机即生效）
+     *   3. AccessibilityManager 已启用服务列表（原逻辑，作为兜底）
+     */
     fun isAccessibilityServiceEnabled(context: Context): Boolean {
-        val am = context.getSystemService(ACCESSIBILITY_SERVICE) as AccessibilityManager
-        val expectedId = ComponentName(context, EInkAccessibilityService::class.java).flattenToShortString()
-        val enabledServices = am.getEnabledAccessibilityServiceList(FEEDBACK_ALL_MASK)
-        XLog.d("isAccessibilityServiceEnabled: expectedId=$expectedId, enabledServices=$enabledServices")
-        return enabledServices.any { it.id == expectedId }
+        val component = ComponentName(context, EInkAccessibilityService::class.java)
+        val shortId = component.flattenToShortString()  // 形如 pkg/.EInkAccessibilityService
+        val fullId = component.flattenToString()        // 形如 pkg/com.xxx.EInkAccessibilityService
+
+        val bySelfFlag = EInkAccessibilityService.isRunning
+        val bySecure = isEnabledInSecureSettings(context, shortId, fullId)
+        val byManager = isEnabledInAccessibilityManager(context, shortId, fullId)
+
+        val enabled = bySelfFlag || bySecure || byManager
+        XLog.d(
+            "isAccessibilityServiceEnabled: 结果=$enabled " +
+                    "(服务标志=$bySelfFlag, 设置项=$bySecure, 管理器=$byManager), shortId=$shortId"
+        )
+        return enabled
+    }
+
+    /**
+     * 从 Settings.Secure 读取已启用的无障碍服务列表并匹配本服务。
+     * 该值就是「设置 → 无障碍」里那个开关的真实落盘值，开机后立即可读，不受 bind 时机影响。
+     */
+    private fun isEnabledInSecureSettings(context: Context, vararg ids: String): Boolean {
+        return try {
+            val raw = Settings.Secure.getString(
+                context.contentResolver,
+                Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+            )
+            if (raw.isNullOrEmpty()) {
+                XLog.d("isEnabledInSecureSettings: enabled_accessibility_services 为空")
+                return false
+            }
+            val splitter = TextUtils.SimpleStringSplitter(':')
+            splitter.setString(raw)
+            var hit = false
+            while (splitter.hasNext()) {
+                val item = splitter.next().trim()
+                if (item.isEmpty()) continue
+                if (ids.any { it.equals(item, ignoreCase = true) }) {
+                    hit = true
+                    break
+                }
+            }
+            XLog.d("isEnabledInSecureSettings: raw=$raw, 命中=$hit")
+            hit
+        } catch (e: Exception) {
+            XLog.e("isEnabledInSecureSettings: 读取设置失败", e)
+            false
+        }
+    }
+
+    /** 通过 AccessibilityManager 的已启用服务列表判断（原逻辑，兜底用） */
+    private fun isEnabledInAccessibilityManager(
+        context: Context,
+        vararg ids: String
+    ): Boolean {
+        return try {
+            val am = context.getSystemService(ACCESSIBILITY_SERVICE) as? AccessibilityManager
+            val list = am?.getEnabledAccessibilityServiceList(FEEDBACK_ALL_MASK)
+            val hit = list?.any { info ->
+                ids.any { it.equals(info.id, ignoreCase = true) }
+            } ?: false
+            XLog.d("isEnabledInAccessibilityManager: 列表=${list?.map { it.id }}, 命中=$hit")
+            hit
+        } catch (e: Exception) {
+            XLog.e("isEnabledInAccessibilityManager: 查询失败", e)
+            false
+        }
     }
 
     /**

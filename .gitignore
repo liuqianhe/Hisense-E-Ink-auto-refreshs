@@ -83,3 +83,10 @@ replay_pid*
 hs_err_pid*
 replay_pid*
 
+
+# Gradle Wrapper 必须入库，否则 clone 后命令行 ./gradlew 不可用
+# （否定规则必须放在所有 *.jar 规则之后才会生效）
+!gradle/wrapper/gradle-wrapper.jar
+# 本地说明文档，不入库（仅本机参考）
+说明文件.md
+修改说明.md
