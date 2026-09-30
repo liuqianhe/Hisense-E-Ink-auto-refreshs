@@ -89,6 +89,8 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         binding.btnGrantRoot.setOnClickListener { this.onClick(it) }
         binding.btnScheme.setOnClickListener { this.onClick(it) }
         binding.ibPrivilegeHelp.setOnClickListener { this.onClick(it) }
+        // 状态文本可点击：未授权时直接触发授权，让“（点授权）”真正可用（Issue B）
+        binding.tvPrivilegeStatus.setOnClickListener { onPrivilegeStatusClick() }
         binding.btnMonitorStatusOn.setOnClickListener { this.onClick(it) }
         binding.btnMonitorStatusOff.setOnClickListener { this.onClick(it) }
         binding.cbMonitorTouch.setOnClickListener { this.onClick(it) }
@@ -321,6 +323,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                         return@launch
                     }
                     val ok = withContext(Dispatchers.IO) { PrivilegedShell.requestRootGrant() }
+                    prefs.rootGranted = ok
                     Toast.makeText(
                         this@MainActivity,
                         if (ok) R.string.toast_root_granted else R.string.toast_root_denied,
@@ -457,12 +460,52 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         }
     }
 
+    /**
+     * 提权状态文本点击：在“未授权”态直接触发授权，等价于点击对应的「授权 Shizuku / 授权 Root」按钮，
+     * 让界面上“（点授权）”真正可点（Issue B）。已授权或无可用的授权途径时不动作。
+     */
+    private fun onPrivilegeStatusClick() {
+        lifecycleScope.launch {
+            when {
+                PrivilegedShell.hasRoot() || PrivilegedShell.shizukuReady() -> return@launch
+                PrivilegedShell.shizukuBinderAlive() ->
+                    Shizuku.requestPermission(REQUEST_SHIZUKU_PERMISSION)
+                PrivilegedShell.rootBinaryExists() -> {
+                    val ok = withContext(Dispatchers.IO) { PrivilegedShell.requestRootGrant() }
+                    prefs.rootGranted = ok
+                    Toast.makeText(
+                        this@MainActivity,
+                        if (ok) R.string.toast_root_granted else R.string.toast_root_denied,
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    refreshPrivilegeStatus()
+                }
+                else ->
+                    Toast.makeText(this@MainActivity, R.string.tv_privilege_none, Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
     override fun onResume() {
         super.onResume()
         XLog.d("onResume: ")
         // 请求必要权限
         requestRequiredPermissions()
         updateUI()
+        // 后台被杀后 Root 会话会丢失，但 Magisk 已对本应用放行时重新 exec su 不弹窗；
+        // 静默重探恢复授权，使“一键开启无障碍”可直接点击（与 Shizuku 行为一致，Issue A）。
+        // 同时把当前已生效的授权持久化，兼容“本次更新前已授权但未落盘”的旧安装。
+        if (PrivilegedShell.hasRoot()) {
+            prefs.rootGranted = true
+        } else if (prefs.rootGranted && PrivilegedShell.rootBinaryExists()) {
+            lifecycleScope.launch(Dispatchers.IO) {
+                val ok = PrivilegedShell.requestRootGrant()
+                prefs.rootGranted = ok
+                withContext(Dispatchers.Main) {
+                    if (!isFinishing && !isDestroyed) refreshPrivilegeStatus()
+                }
+            }
+        }
         // 开机后系统 bind 无障碍服务可能慢半拍，延迟再复查两次状态
         // （只刷新状态区，不触碰输入框，避免覆盖用户编辑中的内容）
         binding.root.postDelayed({ if (!isFinishing && !isDestroyed) refreshAccessibilityStatus() }, 800)

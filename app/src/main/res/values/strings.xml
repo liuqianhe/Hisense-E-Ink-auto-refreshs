@@ -70,9 +70,9 @@
     <string name="tv_privilege_none">无（需手动去设置页开启）</string>
     <string name="tv_privilege_root">Root 已就绪</string>
     <string name="tv_privilege_shizuku">Shizuku 已授权</string>
-    <string name="tv_privilege_shizuku_need_grant">Shizuku 未授权（点授权）</string>
+    <string name="tv_privilege_shizuku_need_grant">Shizuku 未授权</string>
     <string name="tv_privilege_shizuku_missing">未安装 Shizuku</string>
-    <string name="tv_privilege_root_need_grant">Root 未授权（点授权）</string>
+    <string name="tv_privilege_root_need_grant">Root 未授权</string>
     <string name="btn_privilege_grant">授权</string>
     <string name="btn_grant_shizuku">授权 Shizuku</string>
     <string name="btn_grant_root">授权 Root</string>

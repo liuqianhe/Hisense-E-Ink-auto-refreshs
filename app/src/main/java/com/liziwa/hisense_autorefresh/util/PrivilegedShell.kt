@@ -120,9 +120,19 @@ object PrivilegedShell {
     /** Root 是否已被本应用授权（只读缓存，不触发 Magisk 弹窗） */
     fun hasRoot(): Boolean = rootGranted
 
-    /** 设备上是否存在 su 可执行文件（只查文件存在性，不执行、不弹窗），用于决定是否显示「授权 Root」按钮 */
-    fun rootBinaryExists(): Boolean =
-        SU_CANDIDATES.filter { it != "su" }.any { java.io.File(it).exists() }
+    /**
+     * 设备上是否存在可用的 su（用于决定是否显示「授权 Root」按钮）。
+     * 注意：部分 ROM（如本机海信）在 app 的挂载命名空间下 stat /sbin/su 会返回不存在
+     * （adb shell 能看到，app 内 File.exists 却为 false），导致按钮被误判隐藏；
+     * 因此改为真正尝试 exec "su" 来判定（立即销毁进程，不触发 Magisk 授权弹窗）。
+     */
+    fun rootBinaryExists(): Boolean = try {
+        val p = Runtime.getRuntime().exec(arrayOf("su", "-c", "true"))
+        p.destroy() // 立即销毁，避免弹出 Magisk 授权框
+        true
+    } catch (e: Throwable) {
+        false
+    }
 
     /** 当前应使用的提权方式，遵循已设置的授权方案 */
     fun currentMode(): Mode {

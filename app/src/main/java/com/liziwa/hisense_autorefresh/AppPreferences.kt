@@ -108,6 +108,16 @@ class AppPreferences private constructor(context: Context) {
         get() = prefs.getString("privilege_scheme", null) ?: "auto"
         set(value) = prefs.edit { putString("privilege_scheme", value).apply() }
 
+    /**
+     * 是否曾成功拿到 Root 授权（持久化）。
+     * 用于后台被杀后静默重探恢复：Root 会话随进程死亡而丢失，
+     * 但 Magisk 已对本应用放行时重新 exec su 不会弹窗，可在 onResume 直接恢复，
+     * 免去再次点“授权 Root”才能“一键开启无障碍”的麻烦（与 Shizuku 行为对齐）。
+     */
+    var rootGranted: Boolean
+        get() = prefs.getBoolean("root_granted", false)
+        set(value) = prefs.edit { putBoolean("root_granted", value).apply() }
+
     /** 悬浮窗权限状态：1=已授权, 0=未授权/待申请, -1=初始未判断 */
     var permissionOverlay: Int
         get() = prefs.getInt("permission_overlay", -1)
