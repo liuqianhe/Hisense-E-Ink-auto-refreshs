@@ -90,3 +90,5 @@ replay_pid*
 # 本地说明文档，不入库（仅本机参考）
 说明文件.md
 修改说明.md
+# WorkBuddy 项目数据目录（记忆/笔记等，仅本机）
+.workbuddy/

@@ -1,0 +1,53 @@
+name: Build & Release APK
+
+# 触发方式：
+#   1) 推送 v 开头的 tag（如 git tag v1.3.3 && git push origin v1.3.3）
+#   2) 在 GitHub 仓库的 Actions 页面手动点「Run workflow」（workflow_dispatch）
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+# GITHUB_TOKEN 默认只读，创建 Release 必须显式授予 contents 写权限
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 配置 JDK 17（AGP 8.x 需要）
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: 缓存 Gradle 依赖
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: 赋予 gradlew 执行权限
+        run: chmod +x ./gradlew
+
+      # keystore.jks 已在仓库内、签名密码写在 app/build.gradle.kts，
+      # 因此 CI 无需额外配置密钥即可产出已签名的 release 包
+      - name: 构建 Release APK
+        run: ./gradlew :app:assembleRelease --no-daemon
+
+      # 产物文件名带版本号，统一复制成固定名字方便上传
+      - name: 整理产物
+        run: |
+          mkdir -p out
+          cp app/build/outputs/apk/release/*.apk out/app-release.apk
+
+      - name: 创建 Release 并上传 APK
+        uses: softprops/action-gh-release@v2
+        with:
+          files: out/app-release.apk
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
