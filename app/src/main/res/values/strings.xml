@@ -94,6 +94,7 @@
     <string name="toast_shizuku_not_running">Shizuku 未启动，请先启动 Shizuku 并授权</string>
     <string name="toast_keep_alive_ok">已加入保活白名单</string>
     <string name="toast_keep_alive_fail">加白失败，可能该命令不被系统支持</string>
+    <string name="toast_keep_alive_need_privilege">加入保活白名单需要 Shizuku 或 Root 权限，请先启动并授权后再试</string>
     <string name="toast_relax_hidden_api_ok">已解除隐藏API限制（值=0）</string>
     <string name="toast_relax_hidden_api_fail">解除失败，请改用电脑 adb 手动设置</string>
     <string name="toast_shizuku_granted">Shizuku 授权成功</string>

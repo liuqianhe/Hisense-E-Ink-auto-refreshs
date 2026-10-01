@@ -50,11 +50,13 @@
                     android:text="@string/btn_keep_alive" />
 
                 <!-- 仅首次启用需要，常态无需，故置于右上角、缩小尺寸避免占地方 -->
+                <!-- 与左侧「加入保活白名单」拉开适度间距（8dp），避免过大挤压标题应用名 -->
                 <Button
                     android:id="@+id/btn_relax_hidden_api"
                     style="@style/defButtonStyle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginLeft="8dp"
                     android:minHeight="28dp"
                     android:minWidth="0dp"
                     android:paddingStart="8dp"
@@ -101,10 +103,11 @@
                     app:layout_constraintRight_toRightOf="parent"
                     app:layout_constraintTop_toTopOf="@id/tv_accessibility" />
 
+                <!-- 与上一行「去设置」拉开更大上下间距（32dp > 常规 20dp），让两行按钮不显拥挤 -->
                 <TextView
                     android:id="@+id/tv_monitor"
                     style="@style/defTextStyle"
-                    android:layout_marginTop="@dimen/space"
+                    android:layout_marginTop="32dp"
                     android:text="@string/tv_monitor_status"
                     app:layout_constraintLeft_toLeftOf="parent"
                     app:layout_constraintTop_toBottomOf="@id/tv_accessibility" />
@@ -166,6 +169,26 @@
                     android:maxLines="1"
                     app:layout_constraintBottom_toBottomOf="@id/tv_privilege"
                     app:layout_constraintLeft_toRightOf="@id/tv_privilege"
+                    app:layout_constraintRight_toLeftOf="@id/btn_scheme"
+                    app:layout_constraintTop_toTopOf="@id/tv_privilege" />
+
+                <!-- 授权方案选择：上移到「可用授权」同一行（状态文本与帮助图标之间）。
+                     尺寸 12sp / minHeight 32dp：比标题栏小按钮（11sp/28dp）略大便于点击，
+                     又不至于挤压左侧状态文本（状态文本为 0dp + ellipsize，过长会自动省略） -->
+                <Button
+                    android:id="@+id/btn_scheme"
+                    style="@style/defButtonStyle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginLeft="6dp"
+                    android:layout_marginRight="6dp"
+                    android:minHeight="38dp"
+                    android:minWidth="0dp"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:textSize="14sp"
+                    android:text="@string/btn_scheme"
+                    app:layout_constraintBottom_toBottomOf="@id/tv_privilege"
                     app:layout_constraintRight_toLeftOf="@id/ib_privilege_help"
                     app:layout_constraintTop_toTopOf="@id/tv_privilege" />
 
@@ -212,28 +235,22 @@
                         android:text="@string/btn_grant_root" />
                 </LinearLayout>
 
+                <!-- 一键开启无障碍：方案按钮已上移至「可用授权」行，本按钮独占一行并水平居中。
+                     尺寸适度放大（48dp / 16sp），因顶边锚定在 row_grants 下方，向下加高不会碰到上方「方案」按钮 -->
                 <Button
                     android:id="@+id/btn_enable_accessibility_auto"
                     style="@style/defButtonStyle"
-                    android:layout_width="0dp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:layout_marginTop="@dimen/space"
-                    android:layout_marginRight="5dp"
+                    android:minHeight="48dp"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:textSize="16sp"
                     android:text="@string/btn_enable_accessibility_auto"
                     app:layout_constraintLeft_toLeftOf="parent"
-                    app:layout_constraintRight_toLeftOf="@id/btn_scheme"
-                    app:layout_constraintTop_toBottomOf="@id/row_grants" />
-
-                <!-- 授权方案选择：从顶部行下移到「一键开启无障碍」同行右侧，原「加入保活白名单」已移至标题栏 -->
-                <Button
-                    android:id="@+id/btn_scheme"
-                    style="@style/defButtonStyle"
-                    android:layout_width="0dp"
-                    android:layout_marginLeft="5dp"
-                    android:text="@string/btn_scheme"
-                    app:layout_constraintBottom_toBottomOf="@id/btn_enable_accessibility_auto"
-                    app:layout_constraintLeft_toRightOf="@id/btn_enable_accessibility_auto"
                     app:layout_constraintRight_toRightOf="parent"
-                    app:layout_constraintTop_toTopOf="@id/btn_enable_accessibility_auto" />
+                    app:layout_constraintTop_toBottomOf="@id/row_grants" />
 
             </androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -439,35 +456,37 @@
                 app:layout_constraintTop_toBottomOf="@id/cl_config">
 
                 <Button
-                    android:id="@+id/btn_save"
-                    style="@style/defButtonStyle"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="2"
-                    android:layout_marginRight="5dp"
-                    android:text="@string/btn_save" />
-
-                <Button
                     android:id="@+id/btn_test"
                     style="@style/defButtonStyle"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
+                    android:layout_weight="1.5"
+                    android:layout_marginRight="5dp"
+                    android:minHeight="34dp"
+                    android:textSize="13sp"
+                    android:text="@string/btn_test" />
+
+                <!-- 保存居中：左右两侧「测试刷新」「退出」等宽（各权重1.5），保存权重1.7（约占整行36%），
+                     其中心即整行中心 -->
+                <Button
+                    android:id="@+id/btn_save"
+                    style="@style/defButtonStyle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1.7"
                     android:layout_marginLeft="5dp"
                     android:layout_marginRight="5dp"
-                    android:minHeight="30dp"
-                    android:textSize="12sp"
-                    android:text="@string/btn_test" />
+                    android:text="@string/btn_save" />
 
                 <Button
                     android:id="@+id/btn_exit"
                     style="@style/defButtonStyle"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
+                    android:layout_weight="1.5"
                     android:layout_marginLeft="5dp"
-                    android:minHeight="30dp"
-                    android:textSize="12sp"
+                    android:minHeight="34dp"
+                    android:textSize="13sp"
                     android:text="@string/btn_exit" />
             </LinearLayout>
 

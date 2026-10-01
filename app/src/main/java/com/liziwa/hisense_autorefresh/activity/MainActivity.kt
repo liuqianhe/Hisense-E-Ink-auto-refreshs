@@ -226,7 +226,8 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 binding.rowGrants.visibility =
                     if (showShizukuGrant || showRootGrant) View.VISIBLE else View.GONE
                 binding.btnScheme.text = getString(R.string.btn_scheme_fmt, schemeNames[scheme])
-                binding.btnKeepAlive.isEnabled = mode != PrivilegedShell.Mode.NONE
+                // 「加入保活白名单」不再置灰禁用：无授权时仍需可点击，才能弹出「需要 Shizuku 或 Root 权限」提示
+                // （设成 isEnabled=false 后 onClick 根本不触发，提示弹不出来，与当初一键开启无障碍的坑相同）
                 binding.btnRelaxHiddenApi.isEnabled = mode != PrivilegedShell.Mode.NONE
             }
         }
@@ -321,9 +322,14 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             // 加入 Doze 白名单 + 放行后台运行；依赖前台服务常驻，不创建悬浮窗
             binding.btnKeepAlive -> {
                 lifecycleScope.launch {
-                    if (PrivilegedShell.currentMode() == PrivilegedShell.Mode.NONE) {
+                    // currentMode() 会探测 su，必须在 IO 线程
+                    if (withContext(Dispatchers.IO) { PrivilegedShell.currentMode() }
+                        == PrivilegedShell.Mode.NONE
+                    ) {
                         Toast.makeText(
-                            this@MainActivity, R.string.toast_no_privilege, Toast.LENGTH_SHORT
+                            this@MainActivity,
+                            R.string.toast_keep_alive_need_privilege,
+                            Toast.LENGTH_SHORT
                         ).show()
                         return@launch
                     }
