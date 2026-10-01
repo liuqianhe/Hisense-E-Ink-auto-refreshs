@@ -6,7 +6,11 @@ import android.content.pm.PackageManager
 import android.os.Bundle
 import android.provider.Settings
 import android.text.Editable
+import android.text.SpannableString
+import android.text.TextPaint
 import android.text.TextUtils
+import android.text.method.LinkMovementMethod
+import android.text.style.ClickableSpan
 import android.view.View
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
@@ -191,7 +195,32 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 PrivilegedShell.SCHEME_SHIZUKU to getString(R.string.scheme_shizuku)
             )
             withContext(Dispatchers.Main) {
-                binding.tvPrivilegeStatus.setText(textId)
+                // 「Shizuku 未授权」状态：仅把其中的 “Shizuku” 一词做成带下划线的可点击链接，
+                // 点击跳转 Shizuku 应用；其余状态保持普通文本（避免整段/整页都是按钮）。
+                if (textId == R.string.tv_privilege_shizuku_need_grant) {
+                    val raw = getString(textId)
+                    val spanned = SpannableString(raw)
+                    val start = raw.indexOf("Shizuku")
+                    if (start >= 0) {
+                        spanned.setSpan(
+                            object : ClickableSpan() {
+                                override fun onClick(widget: View) = openShizukuApp()
+                                override fun updateDrawState(ds: TextPaint) {
+                                    super.updateDrawState(ds)
+                                    ds.isUnderlineText = true
+                                    ds.color = resources.getColor(R.color.black, null)
+                                }
+                            },
+                            start, start + "Shizuku".length,
+                            SpannableString.SPAN_EXCLUSIVE_EXCLUSIVE
+                        )
+                    }
+                    binding.tvPrivilegeStatus.text = spanned
+                } else {
+                    binding.tvPrivilegeStatus.setText(textId)
+                }
+                // 让 ClickableSpan 可响应点击（普通文本设此也无副作用）
+                binding.tvPrivilegeStatus.movementMethod = LinkMovementMethod.getInstance()
                 binding.btnGrantShizuku.visibility = if (showShizukuGrant) View.VISIBLE else View.GONE
                 binding.btnGrantRoot.visibility = if (showRootGrant) View.VISIBLE else View.GONE
                 binding.rowGrants.visibility =
@@ -200,6 +229,19 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 binding.btnKeepAlive.isEnabled = mode != PrivilegedShell.Mode.NONE
                 binding.btnRelaxHiddenApi.isEnabled = mode != PrivilegedShell.Mode.NONE
             }
+        }
+    }
+
+    /**
+     * 跳转到 Shizuku 管理器应用，方便用户在「已装未启动/未授权」时快速去启动并授权。
+     * 若 Shizuku 确实未安装（启动意图为空），则提示用户。
+     */
+    private fun openShizukuApp() {
+        val intent = packageManager.getLaunchIntentForPackage("moe.shizuku.privileged.api")
+        if (intent != null) {
+            startActivity(intent)
+        } else {
+            Toast.makeText(this, R.string.tv_privilege_shizuku_missing, Toast.LENGTH_SHORT).show()
         }
     }
 
