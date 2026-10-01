@@ -423,41 +423,53 @@
                     app:layout_constraintLeft_toRightOf="@id/tv_hide_background_task"
                     app:layout_constraintTop_toTopOf="@id/tv_hide_background_task" />
 
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <!-- 操作行：保存 / 测试刷新 / 退出 同一行；测试与退出缩小尺寸（仍包在 ScrollView 内，保持可滚动） -->
+            <LinearLayout
+                android:id="@+id/row_actions"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="@dimen/area_margin"
+                android:layout_marginTop="12dp"
+                android:layout_marginRight="@dimen/area_margin"
+                android:orientation="horizontal"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintRight_toRightOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/cl_config">
+
                 <Button
                     android:id="@+id/btn_save"
                     style="@style/defButtonStyle"
-                    android:layout_marginTop="@dimen/space"
-                    android:text="@string/btn_save"
-                    app:layout_constraintLeft_toLeftOf="parent"
-                    app:layout_constraintRight_toRightOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/tv_hide_background_task" />
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="2"
+                    android:layout_marginRight="5dp"
+                    android:text="@string/btn_save" />
 
-            </androidx.constraintlayout.widget.ConstraintLayout>
+                <Button
+                    android:id="@+id/btn_test"
+                    style="@style/defButtonStyle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginLeft="5dp"
+                    android:layout_marginRight="5dp"
+                    android:minHeight="30dp"
+                    android:textSize="12sp"
+                    android:text="@string/btn_test" />
 
-            <!-- 测试 / 退出按钮：跟随内容排列在配置区下方（不再钉在屏幕底部遮挡） -->
-            <Button
-                android:id="@+id/btn_test"
-                style="@style/defButtonStyle"
-                android:layout_width="0dp"
-                android:layout_marginLeft="@dimen/area_margin"
-                android:layout_marginTop="12dp"
-                android:layout_marginRight="5dp"
-                android:text="@string/btn_test"
-                app:layout_constraintLeft_toLeftOf="parent"
-                app:layout_constraintRight_toLeftOf="@id/btn_exit"
-                app:layout_constraintTop_toBottomOf="@id/cl_config" />
-
-            <Button
-                android:id="@+id/btn_exit"
-                style="@style/defButtonStyle"
-                android:layout_width="0dp"
-                android:layout_marginLeft="5dp"
-                android:layout_marginRight="@dimen/area_margin"
-                android:text="@string/btn_exit"
-                app:layout_constraintBottom_toBottomOf="@id/btn_test"
-                app:layout_constraintLeft_toRightOf="@id/btn_test"
-                app:layout_constraintRight_toRightOf="parent"
-                app:layout_constraintTop_toTopOf="@id/btn_test" />
+                <Button
+                    android:id="@+id/btn_exit"
+                    style="@style/defButtonStyle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginLeft="5dp"
+                    android:minHeight="30dp"
+                    android:textSize="12sp"
+                    android:text="@string/btn_exit" />
+            </LinearLayout>
 
         </androidx.constraintlayout.widget.ConstraintLayout>
     </ScrollView>
