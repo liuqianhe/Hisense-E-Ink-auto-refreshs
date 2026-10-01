@@ -172,7 +172,11 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                         if (PrivilegedShell.rootBinaryExists()) R.string.tv_privilege_root_need_grant
                         else R.string.tv_privilege_none
                     PrivilegedShell.SCHEME_SHIZUKU ->
-                        if (PrivilegedShell.shizukuBinderAlive()) R.string.tv_privilege_shizuku_need_grant
+                        // Shizuku 已运行、或已安装但没启动（binder 未连）都算“未授权”，引导用户去启动并授权；
+                        // 仅当设备确实没装 Shizuku 时才提示“未安装 Shizuku”。
+                        if (PrivilegedShell.shizukuBinderAlive() ||
+                            PrivilegedShell.shizukuInstalled(applicationContext)
+                        ) R.string.tv_privilege_shizuku_need_grant
                         else R.string.tv_privilege_shizuku_missing
                     else ->
                         if (PrivilegedShell.shizukuBinderAlive() || PrivilegedShell.rootBinaryExists())

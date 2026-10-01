@@ -92,6 +92,20 @@ object PrivilegedShell {
     }
 
     /**
+     * Shizuku 管理器应用是否已安装（与是否正在运行/已授权无关）。
+     * 用于在「Shizuku 已装但未启动」时，把状态文案从"未安装 Shizuku"降级为"Shizuku 未授权"，
+     * 避免用户明明装了 Shizuku、只是没启动时，却被提示没装而茫然不知该去启动它。
+     */
+    fun shizukuInstalled(context: Context): Boolean {
+        return try {
+            context.packageManager.getPackageInfo("moe.shizuku.privileged.api", 0)
+            true
+        } catch (e: Throwable) {
+            false
+        }
+    }
+
+    /**
      * 探测可用的 su。只在「授权 Root」按钮点击时调用（会触发 Magisk 授权弹窗），
      * 平时的状态刷新只读 rootGranted 缓存，避免反复弹窗打扰。
      */
