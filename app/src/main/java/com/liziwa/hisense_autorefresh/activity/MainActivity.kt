@@ -6,9 +6,7 @@ import android.content.pm.PackageManager
 import android.os.Bundle
 import android.provider.Settings
 import android.text.Editable
-import android.text.SpannableString
 import android.text.TextUtils
-import android.text.style.UnderlineSpan
 import android.view.View
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
@@ -91,8 +89,6 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         binding.btnGrantRoot.setOnClickListener { this.onClick(it) }
         binding.btnScheme.setOnClickListener { this.onClick(it) }
         binding.ibPrivilegeHelp.setOnClickListener { this.onClick(it) }
-        // 状态文本可点击：未授权时直接触发授权，让“（点授权）”真正可用（Issue B）
-        binding.tvPrivilegeStatus.setOnClickListener { onPrivilegeStatusClick() }
         binding.btnMonitorStatusOn.setOnClickListener { this.onClick(it) }
         binding.btnMonitorStatusOff.setOnClickListener { this.onClick(it) }
         binding.cbMonitorTouch.setOnClickListener { this.onClick(it) }
@@ -195,25 +191,12 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 PrivilegedShell.SCHEME_SHIZUKU to getString(R.string.scheme_shizuku)
             )
             withContext(Dispatchers.Main) {
-                // “Shizuku 未授权”且 Shizuku 已装但未启动：做成带下划线的可点击文字（非按钮样式），
-                // 点击后跳转 Shizuku 应用，引导用户去启动并授权；其余状态保持普通文本。
-                val shizukuOpenNeeded = textId == R.string.tv_privilege_shizuku_need_grant
-                    && !PrivilegedShell.shizukuBinderAlive()
-                if (shizukuOpenNeeded) {
-                    val spanned = SpannableString(getString(textId))
-                    spanned.setSpan(
-                        UnderlineSpan(), 0, spanned.length, SpannableString.SPAN_INCLUSIVE_EXCLUSIVE
-                    )
-                    binding.tvPrivilegeStatus.text = spanned
-                } else {
-                    binding.tvPrivilegeStatus.setText(textId)
-                }
+                binding.tvPrivilegeStatus.setText(textId)
                 binding.btnGrantShizuku.visibility = if (showShizukuGrant) View.VISIBLE else View.GONE
                 binding.btnGrantRoot.visibility = if (showRootGrant) View.VISIBLE else View.GONE
                 binding.rowGrants.visibility =
                     if (showShizukuGrant || showRootGrant) View.VISIBLE else View.GONE
                 binding.btnScheme.text = getString(R.string.btn_scheme_fmt, schemeNames[scheme])
-                binding.btnEnableAccessibilityAuto.isEnabled = mode != PrivilegedShell.Mode.NONE
                 binding.btnKeepAlive.isEnabled = mode != PrivilegedShell.Mode.NONE
                 binding.btnRelaxHiddenApi.isEnabled = mode != PrivilegedShell.Mode.NONE
             }
@@ -264,7 +247,8 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
             binding.btnEnableAccessibilityAuto -> {
                 lifecycleScope.launch {
                     // currentMode() 会探测 su，必须在 IO 线程，不能阻塞 UI
-                    if (PrivilegedShell.currentMode() == PrivilegedShell.Mode.NONE) {
+                    val mode = withContext(Dispatchers.IO) { PrivilegedShell.currentMode() }
+                    if (mode == PrivilegedShell.Mode.NONE) {
                         // Shizuku 方案下已装未启动：给更明确的提示，引导用户去启动 Shizuku
                         if (PrivilegedShell.getScheme() == PrivilegedShell.SCHEME_SHIZUKU
                             && PrivilegedShell.shizukuInstalled(applicationContext)
@@ -489,48 +473,6 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         }
     }
 
-    /**
-     * 提权状态文本点击：在“未授权”态直接触发授权，等价于点击对应的「授权 Shizuku / 授权 Root」按钮，
-     * 让界面上“（点授权）”真正可点（Issue B）。已授权或无可用的授权途径时不动作。
-     */
-    private fun onPrivilegeStatusClick() {
-        lifecycleScope.launch {
-            when {
-                PrivilegedShell.hasRoot() || PrivilegedShell.shizukuReady() -> return@launch
-                // Shizuku 方案且已装未启动：直接跳转到 Shizuku 应用，让用户启动并授权
-                // （此时 binder 未连，请求权限无效；与其无反应，不如引导去启动 Shizuku）
-                PrivilegedShell.getScheme() == PrivilegedShell.SCHEME_SHIZUKU
-                    && !PrivilegedShell.shizukuBinderAlive() -> openShizukuApp()
-                PrivilegedShell.shizukuBinderAlive() ->
-                    Shizuku.requestPermission(REQUEST_SHIZUKU_PERMISSION)
-                PrivilegedShell.rootBinaryExists() -> {
-                    val ok = withContext(Dispatchers.IO) { PrivilegedShell.requestRootGrant() }
-                    prefs.rootGranted = ok
-                    Toast.makeText(
-                        this@MainActivity,
-                        if (ok) R.string.toast_root_granted else R.string.toast_root_denied,
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    refreshPrivilegeStatus()
-                }
-                else ->
-                    Toast.makeText(this@MainActivity, R.string.tv_privilege_none, Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
-
-    /**
-     * 跳转到 Shizuku 管理器应用，方便用户在「已装未启动/未授权」时快速去启动并授权。
-     * 若 Shizuku 确实未安装（启动意图为空），则提示用户。
-     */
-    private fun openShizukuApp() {
-        val intent = packageManager.getLaunchIntentForPackage("moe.shizuku.privileged.api")
-        if (intent != null) {
-            startActivity(intent)
-        } else {
-            Toast.makeText(this, R.string.tv_privilege_shizuku_missing, Toast.LENGTH_SHORT).show()
-        }
-    }
 
     override fun onResume() {
         super.onResume()
