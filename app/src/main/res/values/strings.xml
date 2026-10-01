@@ -91,6 +91,7 @@
     <string name="toast_accessibility_enabled_ok">无障碍已开启</string>
     <string name="toast_accessibility_enabled_fail">开启失败，请改用「去设置」手动开启</string>
     <string name="toast_no_privilege">当前方案下无可用授权，请先授权或切换方案</string>
+    <string name="toast_shizuku_not_running">Shizuku 未启动，请先启动 Shizuku 并授权</string>
     <string name="toast_keep_alive_ok">已加入保活白名单</string>
     <string name="toast_keep_alive_fail">加白失败，可能该命令不被系统支持</string>
     <string name="toast_relax_hidden_api_ok">已解除隐藏API限制（值=0）</string>

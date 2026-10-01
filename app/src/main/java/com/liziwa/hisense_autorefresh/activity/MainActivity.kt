@@ -6,7 +6,9 @@ import android.content.pm.PackageManager
 import android.os.Bundle
 import android.provider.Settings
 import android.text.Editable
+import android.text.SpannableString
 import android.text.TextUtils
+import android.text.style.UnderlineSpan
 import android.view.View
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
@@ -193,7 +195,19 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 PrivilegedShell.SCHEME_SHIZUKU to getString(R.string.scheme_shizuku)
             )
             withContext(Dispatchers.Main) {
-                binding.tvPrivilegeStatus.setText(textId)
+                // “Shizuku 未授权”且 Shizuku 已装但未启动：做成带下划线的可点击文字（非按钮样式），
+                // 点击后跳转 Shizuku 应用，引导用户去启动并授权；其余状态保持普通文本。
+                val shizukuOpenNeeded = textId == R.string.tv_privilege_shizuku_need_grant
+                    && !PrivilegedShell.shizukuBinderAlive()
+                if (shizukuOpenNeeded) {
+                    val spanned = SpannableString(getString(textId))
+                    spanned.setSpan(
+                        UnderlineSpan(), 0, spanned.length, SpannableString.SPAN_INCLUSIVE_EXCLUSIVE
+                    )
+                    binding.tvPrivilegeStatus.text = spanned
+                } else {
+                    binding.tvPrivilegeStatus.setText(textId)
+                }
                 binding.btnGrantShizuku.visibility = if (showShizukuGrant) View.VISIBLE else View.GONE
                 binding.btnGrantRoot.visibility = if (showRootGrant) View.VISIBLE else View.GONE
                 binding.rowGrants.visibility =
@@ -251,9 +265,20 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 lifecycleScope.launch {
                     // currentMode() 会探测 su，必须在 IO 线程，不能阻塞 UI
                     if (PrivilegedShell.currentMode() == PrivilegedShell.Mode.NONE) {
-                        Toast.makeText(
-                            this@MainActivity, R.string.toast_no_privilege, Toast.LENGTH_SHORT
-                        ).show()
+                        // Shizuku 方案下已装未启动：给更明确的提示，引导用户去启动 Shizuku
+                        if (PrivilegedShell.getScheme() == PrivilegedShell.SCHEME_SHIZUKU
+                            && PrivilegedShell.shizukuInstalled(applicationContext)
+                        ) {
+                            Toast.makeText(
+                                this@MainActivity,
+                                R.string.toast_shizuku_not_running,
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        } else {
+                            Toast.makeText(
+                                this@MainActivity, R.string.toast_no_privilege, Toast.LENGTH_SHORT
+                            ).show()
+                        }
                         return@launch
                     }
                     val ok = PrivilegedShell.enableAccessibility(applicationContext)
@@ -472,6 +497,10 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
         lifecycleScope.launch {
             when {
                 PrivilegedShell.hasRoot() || PrivilegedShell.shizukuReady() -> return@launch
+                // Shizuku 方案且已装未启动：直接跳转到 Shizuku 应用，让用户启动并授权
+                // （此时 binder 未连，请求权限无效；与其无反应，不如引导去启动 Shizuku）
+                PrivilegedShell.getScheme() == PrivilegedShell.SCHEME_SHIZUKU
+                    && !PrivilegedShell.shizukuBinderAlive() -> openShizukuApp()
                 PrivilegedShell.shizukuBinderAlive() ->
                     Shizuku.requestPermission(REQUEST_SHIZUKU_PERMISSION)
                 PrivilegedShell.rootBinaryExists() -> {
@@ -487,6 +516,19 @@ class MainActivity : AppCompatActivity(), View.OnClickListener {
                 else ->
                     Toast.makeText(this@MainActivity, R.string.tv_privilege_none, Toast.LENGTH_SHORT).show()
             }
+        }
+    }
+
+    /**
+     * 跳转到 Shizuku 管理器应用，方便用户在「已装未启动/未授权」时快速去启动并授权。
+     * 若 Shizuku 确实未安装（启动意图为空），则提示用户。
+     */
+    private fun openShizukuApp() {
+        val intent = packageManager.getLaunchIntentForPackage("moe.shizuku.privileged.api")
+        if (intent != null) {
+            startActivity(intent)
+        } else {
+            Toast.makeText(this, R.string.tv_privilege_shizuku_missing, Toast.LENGTH_SHORT).show()
         }
     }
 
